@@ -1,0 +1,168 @@
+<?php
+
+/**
+ * Main admin class for the plugin. Sets up all
+ * menus, settings, pages and dashboards.
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+class WPNA_Admin extends WPNA_Admin_Base {
+
+	/**
+	 * Register hooks here
+	 *
+	 * @todo Change meta box hook
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function hooks() {
+		add_action( 'admin_menu',            array( $this, 'register_admin_menu_items' ), 10, 0 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'scripts' ), 10, 1 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'styles' ), 10, 1 );
+		add_action( 'load-post.php',         array( $this, 'setup_posts_meta_box' ), 10, 0 );
+		add_action( 'load-post-new.php',     array( $this, 'setup_posts_meta_box' ), 10, 0 );
+	}
+
+	/**
+	 * Register custom menu items for the admin menu
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function register_admin_menu_items() {
+		$settings_page = add_menu_page(
+			__( 'Native Articles', 'wp-native-articles' ),
+			__( 'Native Articles', 'wp-native-articles' ),
+			'manage_options',
+			'wp_native_articles',
+			null,
+			'',
+			91
+		);
+
+		/**
+		 * Use this action to add any more menu items to the admin menu
+		 *
+		 * @param string Page hook slug
+		 */
+		do_action( 'wpna_admin_menu_items', $settings_page );
+	}
+
+	/**
+	 * Load admin JS files
+	 *
+	 * @access public
+	 * @param  string $hook
+	 * @return null
+	 */
+	public function scripts( $hook ) {
+		// Edit post and New post pages
+		if ( in_array( $hook, array( 'post.php', 'post-new.php') ) ) {
+			wp_enqueue_script( 'wpna-post', plugins_url( '/assets/js/post-meta-box.js', dirname( __FILE__ ) ), array( 'jquery-ui-tabs' ), WPNA_VERSION, true );
+		}
+	}
+
+	/**
+	 * Load admin CSS files
+	 *
+	 * @todo Localize pure
+	 *
+	 * @access public
+	 * @param  string $hook
+	 * @return null
+	 */
+	public function styles( $hook ) {
+		// Edit post and New post pages
+		if ( in_array( $hook, array( 'post.php', 'post-new.php') ) ) {
+			wp_enqueue_style( 'pure', 'https://cdnjs.cloudflare.com/ajax/libs/pure/0.6.0/pure-min.css', '0.6.0', true );
+			wp_enqueue_style( 'wpna-post', plugins_url( '/assets/css/post.css', dirname( __FILE__ ) ), '0.0.1' );
+		}
+
+	}
+
+	/**
+	 * Register the action to add_meta_boxes
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_posts_meta_box() {
+		add_action( 'add_meta_boxes', array( $this, 'add_post_meta_box' ) );
+	}
+
+	/**
+	 *	Add the meta box
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function add_post_meta_box() {
+		add_meta_box(
+			'wp-native-articles',
+			esc_html__( 'WP Native Articles', 'wp-native-articles' ),
+			array( $this, 'post_meta_boxes_callback' ),
+			'post',
+			'advanced',
+			'default'
+		);
+	}
+
+	/**
+	 * Output for the meta box on the posts page.
+	 * It's just an action allowing other classes to register tabs easily
+	 *
+	 * @todo Change to function?
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function post_meta_boxes_callback( $post ) {
+
+		/**
+		 * Use this action to output the content in
+		 * the header of the  meta box on edit post pages
+		 */
+		do_action( 'wpna_post_meta_box_content_header' );
+
+		/**
+		 * Add or remove tabs and their content here
+		 * @var array Empty array of tabs
+		 */
+		$tabs = apply_filters( 'wpna_post_meta_box_content_tabs', array() );
+
+		?>
+
+		<?php if ( ! empty( $tabs ) ) :?>
+			<div id="wpna-tabs" class="wpna-tabs">
+
+				<ul>
+					<?php foreach ( $tabs as $tab ) : ?>
+						<li><a href="#<?php echo esc_attr( $tab['key'] ); ?>"><?php echo esc_html( $tab['title'] ); ?></a></li>
+					<?php endforeach; ?>
+				</ul>
+
+				<?php foreach ( $tabs as $tab ) : ?>
+					<div id="<?php echo esc_attr( $tab['key'] ); ?>">
+						<?php call_user_func( $tab['callback'], $post ); ?>
+					</div>
+				<?php endforeach; ?>
+
+			</div>
+		<?php endif; ?>
+
+		<?php
+		/**
+		 * Use this action to output the content in
+		 * the footer of the  meta box on edit post pages
+		 */
+		do_action( 'wpna_post_meta_box_content_footer' );
+	}
+
+}
+

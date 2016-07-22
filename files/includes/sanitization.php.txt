@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * Helper functions for sanitization
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+if ( ! function_exists( 'wpna_sanitize_options' ) ) :
+
+	/**
+	 * For every value passed to it it setups sanitization
+	 * filters then merges the result with the existing options
+	 *
+	 * @param  array  $value Array of unsanitized values
+	 * @return array
+	 */
+	function wpna_sanitize_options( $values ) {
+		$wpna_options = (array) wpna_get_options();
+
+		$sanitized_values = array();
+		foreach ( $values as $key => $value ) {
+
+			/**
+			 * Use filters to allow sanitizing of individual options
+			 *
+			 * @param mixed  $value  The value to sanitize
+			 * @param string $key    The options name
+			 * @param array  $values All options
+			 */
+			$sanitized_values[ $key ] = apply_filters( 'wpna_sanitize_option-' . $key, $value, $key, $values );
+
+		}
+
+		// Merge them in with any existing options
+		$options = array_merge( $wpna_options, $sanitized_values );
+
+		return $options;
+	}
+endif;
+
+if ( ! function_exists( 'wpna_switchval' ) ) :
+
+	/**
+	 * Returns a switch value (on / off)
+	 *
+	 * This is because WordPress has issues storing true / false
+	 *
+	 * @param  mixed $value
+	 * @return string
+	 */
+	function wpna_switchval( $value = 'off' ) {
+		return 'on' == $value ? 'on' : 'off';
+	}
+endif;
+
+if ( ! function_exists( 'wpna_to_switch' ) ) :
+
+	/**
+	 * Checks to see if a value is actually set
+	 * and returns a switch value (on / off) if so
+	 *
+	 * This is because WordPress has issues storing true / false
+	 *
+	 * @param  mixed $value
+	 * @return string
+	 */
+	function wpna_to_switch( $value = null ) {
+		if ( is_null( $value ) || $value === "" ) {
+			return null;
+		}
+
+		// WordPress has issues with false. This is more reliable
+		return $value ? 'on' : 'off';
+	}
+endif;
+
+if ( ! function_exists( 'wpna_switch_to_boolean' ) ) :
+
+	/**
+	 * Takes a switch value (on / off) and converts it to boolean
+	 *
+	 * @param  string $value
+	 * @return boolean
+	 */
+	function wpna_switch_to_boolean( $value = null ) {
+		return 'on' == $value ? true : false;
+	}
+endif;
+
+if ( ! function_exists( 'wpna_valid_date' ) ) :
+
+	/**
+	 * Validates a date in the Y-m-d format
+	 *
+	 * @param  string $date
+	 * @return boolean
+	 */
+	function wpna_valid_date( $date ) {
+		$dt = DateTime::createFromFormat( "Y-m-d", $date );
+		return $dt !== false && ! array_sum( $dt->getLastErrors() );
+	}
+endif;
+

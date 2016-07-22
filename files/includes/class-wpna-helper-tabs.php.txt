@@ -1,0 +1,128 @@
+<?php
+
+
+/**
+ * A helper class for creating tabbed interfaces
+ * in the WP admin
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+class WPNA_Helper_Tabs {
+
+	/**
+	 * All the currently registered tabs
+	 *
+	 * @access public
+	 * @var array
+	 */
+	public $tabs = array();
+
+	/**
+	 * The currently active tab
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $active_tab;
+
+	/**
+	 * __constructor
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function __construct() {
+	}
+
+	/**
+	 * Method to register new tabs
+	 *
+	 * @access public
+	 * @param  string  $key      Unique key for the tab
+	 * @param  string  $title    Title for the tab
+	 * @param  mixed   $callback Function to call to output the tab content
+	 * @param  boolean $default  The default tab for when none is selected
+	 * @param  array   $attrs    Any other attrs to output on the <a> elemet
+	 * @return null
+	 */
+	public function register_tab( $key, $title, $url, $callback, $default = false, $attrs = array() ) {
+		$this->tabs[ $key ] = array(
+			'title'    => $title,
+			'url'      => $url,
+			'callback' => $callback,
+			'default'  => (boolean) $default,
+			'attrs'    => $attrs,
+		);
+	}
+
+	/**
+	 * Works out which tab should currently be active
+	 *
+	 * @access public
+	 * @return string
+	 */
+	public function active_tab() {
+		// Check $_GET first
+		if ( ! empty( $_GET['tab'] ) )
+			return $_GET['tab'];
+
+		// Check $_POST next
+		if ( ! empty( $_GET['tab'] ) )
+			return $_GET['tab'];
+
+		// Work out if a default has been set
+		foreach ( $this->tabs as $key => $params ) {
+			if ( $params['default'] ) {
+				return $key;
+			}
+		}
+
+		// If one hasn't been set default to the first tab
+		if ( ! $this->active_tab )
+			return key( $this->tabs );
+	}
+
+	/**
+	 * Outputs the nav elements for the tabs registered
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function tabs_nav() {
+		?>
+		<h2 class="nav-tab-wrapper">
+			<?php foreach ( (array) $this->tabs as $key => $tab ) : ?>
+				<a class="nav-tab<?php echo ( $this->active_tab() == $key ? ' nav-tab-active' : '' ); ?>"
+					id="<?php echo esc_attr( $key ); ?>-tab"
+					href="<?php echo esc_url( add_query_arg( 'tab', $key, $tab['url'] ) ); ?>">
+						<?php echo esc_html( $tab['title'] ); ?>
+				</a>
+			<?php endforeach; ?>
+		</h2>
+		<?php
+	}
+
+	/**
+	 * Calls the callback registered for the current tab
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function tabs_content() {
+		?>
+		<div id="tab_container">
+		<?php
+			if (  isset( $this->tabs[ $this->active_tab() ] ) )
+				call_user_func( $this->tabs[ $this->active_tab() ]['callback'] );
+			?>
+		</div>
+		<?php
+	}
+
+}
+

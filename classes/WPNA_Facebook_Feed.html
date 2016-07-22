@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta charset="utf-8"/>
+    <title>API Documentation</title>
+    <meta name="author" content=""/>
+    <meta name="description" content=""/>
+
+    <link href="../css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/prism.css" rel="stylesheet" media="all"/>
+    <link href="../css/template.css" rel="stylesheet" media="all"/>
+    
+    <!--[if lt IE 9]>
+    <script src="../js/html5.js"></script>
+    <![endif]-->
+    <script src="../js/jquery-1.11.0.min.js"></script>
+    <script src="../js/ui/1.10.4/jquery-ui.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/jquery.smooth-scroll.js"></script>
+    <script src="../js/prism.min.js"></script>
+    <!-- TODO: Add http://jscrollpane.kelvinluck.com/ to style the scrollbars for browsers not using webkit-->
+    <script type="text/javascript">
+    function loadExternalCodeSnippets() {
+        Array.prototype.slice.call(document.querySelectorAll('pre[data-src]')).forEach(function (pre) {
+            var src = pre.getAttribute('data-src');
+            var extension = (src.match(/\.(\w+)$/) || [, ''])[1];
+            var language = 'php';
+
+            var code = document.createElement('code');
+            code.className = 'language-' + language;
+
+            pre.textContent = '';
+
+            code.textContent = 'Loading…';
+
+            pre.appendChild(code);
+
+            var xhr = new XMLHttpRequest();
+
+            xhr.open('GET', src, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+
+                    if (xhr.status < 400 && xhr.responseText) {
+                        code.textContent = xhr.responseText;
+
+                        Prism.highlightElement(code);
+                    }
+                    else if (xhr.status >= 400) {
+                        code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                    }
+                    else {
+                        code.textContent = '✖ Error: File does not exist or is empty';
+                    }
+                }
+            };
+
+            xhr.send(null);
+        });
+    }
+
+    $(document).ready(function(){
+        loadExternalCodeSnippets();
+    });
+    $('#source-view').on('shown', function () {
+        loadExternalCodeSnippets();
+    })
+</script>
+
+    <link rel="shortcut icon" href="../images/favicon.ico"/>
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png"/>
+    <link rel="apple-touch-icon" sizes="72x72" href="../images/apple-touch-icon-72x72.png"/>
+    <link rel="apple-touch-icon" sizes="114x114" href="../images/apple-touch-icon-114x114.png"/>
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <i class="icon-ellipsis-vertical"></i>
+            </a>
+            <a class="brand" href="../index.html">API Documentation</a>
+
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+                                        <li class="dropdown" id="charts-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Charts <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../graphs/class.html">
+                                    <i class="icon-list-alt"></i>&#160;Class hierarchy diagram
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="reports-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Reports <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../reports/errors.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">266</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/markers.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Markers <span class="label label-info pull-right">19</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/deprecated.html">
+                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Deprecated <span class="label label-info pull-right">3</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--<div class="go_to_top">-->
+    <!--<a href="#___" style="color: inherit">Back to top&#160;&#160;<i class="icon-upload icon-white"></i></a>-->
+    <!--</div>-->
+</div>
+
+<div id="___" class="container-fluid">
+        <section class="row-fluid">
+        <div class="span2 sidebar">
+                                <div class="accordion" style="margin-bottom: 0">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-1718107435"></a>
+                                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            </div>
+            <div id="namespace-1718107435" class="accordion-body collapse in">
+                <div class="accordion-inner">
+
+                    
+                    <ul>
+                                                    <li class="interface"><a href="../classes/WPNA_Admin_Interface.html">WPNA_Admin_Interface</a></li>
+                                                                                                    <li class="class"><a href="../classes/BaseFacebook.html">BaseFacebook</a></li>
+                                                    <li class="class"><a href="../classes/Facebook.html">Facebook</a></li>
+                                                    <li class="class"><a href="../classes/FacebookApiException.html">FacebookApiException</a></li>
+                                                    <li class="class"><a href="../classes/FBAccessToken.html">FBAccessToken</a></li>
+                                                    <li class="class"><a href="../classes/FBCode.html">FBCode</a></li>
+                                                    <li class="class"><a href="../classes/FBGetCurrentURLFacebook.html">FBGetCurrentURLFacebook</a></li>
+                                                    <li class="class"><a href="../classes/FBPublic.html">FBPublic</a></li>
+                                                    <li class="class"><a href="../classes/FBPublicCookie.html">FBPublicCookie</a></li>
+                                                    <li class="class"><a href="../classes/FBPublicGetAccessTokenFromCode.html">FBPublicGetAccessTokenFromCode</a></li>
+                                                    <li class="class"><a href="../classes/FBPublicState.html">FBPublicState</a></li>
+                                                    <li class="class"><a href="../classes/FBRecordMakeRequest.html">FBRecordMakeRequest</a></li>
+                                                    <li class="class"><a href="../classes/FBRecordURL.html">FBRecordURL</a></li>
+                                                    <li class="class"><a href="../classes/FBRewrite.html">FBRewrite</a></li>
+                                                    <li class="class"><a href="../classes/PersistentFBPublic.html">PersistentFBPublic</a></li>
+                                                    <li class="class"><a href="../classes/PHPSDKTestCase.html">PHPSDKTestCase</a></li>
+                                                    <li class="class"><a href="../classes/TransientFacebook.html">TransientFacebook</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Activator.html">WPNA_Activator</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Admin.html">WPNA_Admin</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Admin_Base.html">WPNA_Admin_Base</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Deactivator.html">WPNA_Deactivator</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Admin.html">WPNA_Facebook_Admin</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_API.html">WPNA_Facebook_API</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Content_Parser.html">WPNA_Facebook_Content_Parser</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Feed.html">WPNA_Facebook_Feed</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Post.html">WPNA_Facebook_Post</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Helper_Tabs.html">WPNA_Helper_Tabs</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Multisite_Admin.html">WPNA_Multisite_Admin</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Support_Admin.html">WPNA_Support_Admin</a></li>
+                                            </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </section>
+    <section class="row-fluid">
+        <div class="span10 offset2">
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <nav>
+                                                <a href="../namespaces/default.html">\</a> <i class="icon-level-up"></i>
+                                            </nav>
+                    <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
+
+                    <h1><small>\</small>WPNA_Facebook_Feed</h1>
+                    <p><em></em></p>
+                    
+                    
+                                        
+                    <section id="summary">
+                        <h2>Summary</h2>
+                        <section class="row-fluid heading">
+                            <section class="span4">
+                                <a href="#methods">Methods</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#properties">Properties</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#constants">Constants</a>
+                            </section>
+                        </section>
+                        <section class="row-fluid public">
+                            <section class="span4">
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method___construct" class="">__construct()</a><br />
+                                                                    <a href="../classes/WPNA_Admin_Base.html#method_page_url" class="">page_url()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_hooks" class="">hooks()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_setup_tabs" class="">setup_tabs()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_setup_settings" class="">setup_settings()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_feed_tab_callback" class="">feed_tab_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_section_1_callback" class="">section_1_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_posts_per_feed_callback" class="">posts_per_feed_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_article_caching_callback" class="">article_caching_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_modified_only_callback" class="">modified_only_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_enable_playbuzz" class="">enable_playbuzz()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_add_feed" class="">add_feed()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_pre_feed_query_cache" class="">pre_feed_query_cache()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_post_feed_query_cache" class="">post_feed_query_cache()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_flush_feed_query_cache" class="">flush_feed_query_cache()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_feed_query" class="">feed_query()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_filter_empty_posts" class="">filter_empty_posts()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_feed" class="">feed()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#method_feed_headers" class="">feed_headers()</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <a href="../classes/WPNA_Facebook_Feed.html#property_page_slug" class="">$page_slug</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No constants found</em>
+                                                            </section>
+                        </section>
+                        <section class="row-fluid protected">
+                            <section class="span4">
+                                                                    <em>No protected methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No protected properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                        <section class="row-fluid private">
+                            <section class="span4">
+                                                                    <em>No private methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No private properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                    </section>
+                </div>
+                <aside class="span4 detailsbar">
+                                        
+                    
+                    <dl>
+                        <dt>File</dt>
+                            <dd><a href="../files/lib.class-wpna-facebook-feed.html"><div class="path-wrapper">lib/class-wpna-facebook-feed.php</div></a></dd>
+                                                <dt>Package</dt>
+                            <dd><div class="namespace-wrapper">Default</div></dd>
+                                                <dt>Class hierarchy</dt>
+                            <dd class="hierarchy">
+                                                                                                                                                                                                                                                                                                
+                                        <div class="namespace-wrapper"><a href="../classes/WPNA_Admin_Base.html">\WPNA_Admin_Base</a></div>
+                                                                                                    <div class="namespace-wrapper">\WPNA_Facebook_Feed</div>
+                            </dd>
+
+                                                                            <dt>Implements</dt>
+                                                        <dd><a href="../classes/WPNA_Admin_Interface.html"><div class="namespace-wrapper">\WPNA_Admin_Interface</div></a></dd>
+                        
+                        
+                        
+                        
+                                                                        </dl>
+                    <h2>Tags</h2>
+                    <table class="table table-condensed">
+                                            <tr><td colspan="2"><em>None found</em></td></tr>
+                                        </table>
+                </aside>
+            </div>
+
+                        
+                                    <a id="properties" name="properties"></a>
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <h2>Properties</h2>
+                </div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_page_slug" name="property_page_slug" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$page_slug</h3>
+                <pre class="signature">$page_slug : string</pre>
+                <p><em>The slug of the current page</em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                            
+                                    <a id="methods" name="methods"></a>
+            <div class="row-fluid">
+                <div class="span8 content class"><h2>Methods</h2></div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method___construct" name="method___construct" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">__construct()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">__construct() : null</pre>
+                <p><em>Sets up the class</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_page_url" name="method_page_url" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">page_url()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">page_url(  <span class="argument">$params = array()</span>) : string</pre>
+                <p><em>Returns the full url to the current page</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$params </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/WPNA_Admin_Base.html"><div class="path-wrapper">\WPNA_Admin_Base</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_hooks" name="method_hooks" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">hooks()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">hooks() : null</pre>
+                <p><em>Register hooks here</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_setup_tabs" name="method_setup_tabs" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">setup_tabs()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">setup_tabs(  <span class="argument">$tabs</span>) : null</pre>
+                <p><em>Use the Tabs helper to setup tabs on this page</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$tabs </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_setup_settings" name="method_setup_settings" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">setup_settings()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">setup_settings() : null</pre>
+                <p><em>Register sections and settings fields</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_feed_tab_callback" name="method_feed_tab_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">feed_tab_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">feed_tab_callback() : null</pre>
+                <p><em></em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_section_1_callback" name="method_section_1_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">section_1_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">section_1_callback() : null</pre>
+                <p><em>Content outputted at the begining of a section</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_posts_per_feed_callback" name="method_posts_per_feed_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">posts_per_feed_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">posts_per_feed_callback() : null</pre>
+                <p><em>Maximum amount of posts to show in the feed. Facebook wont read more
+than 50 so let&#039;s default to that</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_article_caching_callback" name="method_article_caching_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">article_caching_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">article_caching_callback() : null</pre>
+                <p><em>Whether to cache the article contents in transients or not.</em></p>
+                <p>Set a hidden field before the checkbox so it defaults to false.
+(Use 0 for false otherwise PHP gets confused)</p>
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_modified_only_callback" name="method_modified_only_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">modified_only_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">modified_only_callback() : null</pre>
+                <p><em>Whether to show only the most recently modified posts.</em></p>
+                <p>Set a hidden field before the checkbox so it defaults to false.
+(Use 0 for false otherwise PHP gets confused)</p>
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_enable_playbuzz" name="method_enable_playbuzz" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">enable_playbuzz()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">enable_playbuzz(array  <span class="argument">$playbuzz</span>) : array</pre>
+                <p><em>Playbuzz is only parsed in single articles by default.</em></p>
+                <p>Because feeds are classed as categories the embed code won't
+be inserted. This will enable it.</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>array</td>
+                                <td>$playbuzz </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    array
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_add_feed" name="method_add_feed" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">add_feed()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">add_feed() : null</pre>
+                <p><em>Register the Facebook feed</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_pre_feed_query_cache" name="method_pre_feed_query_cache" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">pre_feed_query_cache()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">pre_feed_query_cache(array  <span class="argument">$request</span>, \WP_Query  <span class="argument">$query</span>) : array</pre>
+                <p><em>Our main feed query is very expensive.</em></p>
+                <p>This caches the whole query in transients for 1 hour</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>array</td>
+                                <td>$request </td>
+                                <td></td>
+                            </tr>
+                                                    <tr>
+                                <td>\WP_Query</td>
+                                <td>$query </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    array
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                                            <dt>See also</dt>
+                                                                <dd><a href="https://www.reddit.com/r/Wordpress/comments/19crcn/best_practice_for_hijacking_main_loop_and_caching/"><span class="namespace-wrapper">https://www.reddit.com/r/Wordpress/comments/19crcn/best_practice_for_hijacking_main_loop_and_caching/</span></a></dd>
+                                                                </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_post_feed_query_cache" name="method_post_feed_query_cache" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">post_feed_query_cache()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">post_feed_query_cache(array  <span class="argument">$posts</span>, \WP_Query  <span class="argument">$query</span>) : array</pre>
+                <p><em>Our main query is very expensive.</em></p>
+                <p>This will cache it for 1 hour.
+Everytime a post is updated it is also flushed.</p>
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>array</td>
+                                <td>$posts </td>
+                                <td></td>
+                            </tr>
+                                                    <tr>
+                                <td>\WP_Query</td>
+                                <td>$query </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    array
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                                            <dt>See also</dt>
+                                                                <dd><a href="https://www.reddit.com/r/Wordpress/comments/19crcn/best_practice_for_hijacking_main_loop_and_caching/"><span class="namespace-wrapper">https://www.reddit.com/r/Wordpress/comments/19crcn/best_practice_for_hijacking_main_loop_and_caching/</span></a></dd>
+                                                                </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_flush_feed_query_cache" name="method_flush_feed_query_cache" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">flush_feed_query_cache()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">flush_feed_query_cache() : null</pre>
+                <p><em>Whenever a post is updated flush the feed query cache</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_feed_query" name="method_feed_query" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">feed_query()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">feed_query(\WP_Query  <span class="argument">$query</span>) : \WP_Query</pre>
+                <p><em>Alters the WP_Query accordingly for this feed</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\WP_Query</td>
+                                <td>$query </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    \WP_Query
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_filter_empty_posts" name="method_filter_empty_posts" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">filter_empty_posts()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">filter_empty_posts(string  <span class="argument">$where = &#039;&#039;</span>) : string</pre>
+                <p><em>Facebook doesn&#039;t like empty articles so let&#039;s try and remove them
+Unhook this filter, we only want it to run once</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>string</td>
+                                <td>$where </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_feed" name="method_feed" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">feed()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">feed() : null</pre>
+                <p><em>Locates the correct template for the feed and loads it in</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_feed_headers" name="method_feed_headers" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">feed_headers()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">feed_headers() : null</pre>
+                <p><em>Set the correct headers for the feed</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                                    </div>
+    </section>
+
+    <div id="source-view" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="source-view-label" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="source-view-label">class-wpna-facebook-feed.php</h3>
+        </div>
+        <div class="modal-body">
+            <pre data-src="../files/lib/class-wpna-facebook-feed.php.txt" class="language-php line-numbers"></pre>
+        </div>
+    </div>
+
+    <footer class="row-fluid">
+        <section class="span10 offset2">
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <section class="row-fluid footer-sections">
+                        <section class="span4">
+                                                        <h1><i class="icon-code"></i></h1>
+                            <div>
+                                <ul>
+                                                                    </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-bar-chart"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../graphs/class.html">Class Hierarchy Diagram</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-pushpin"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../reports/errors.html">Errors</a></li>
+                                    <li><a href="../reports/markers.html">Markers</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                    </section>
+                </section>
+            </section>
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <hr />
+                    Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
+                    on June 29th, 2016 at 09:39.
+                </section>
+            </section>
+        </section>
+    </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,706 @@
+<?php
+
+/**
+ * Setup the Facebook IA admin page.
+ * Register the first tab.
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+class WPNA_Facebook_Admin extends WPNA_Admin_Base implements WPNA_Admin_Interface {
+
+	/**
+	 * The slug of the current page
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $page_slug = 'wp_native_articles';
+
+	/**
+	 * Register hooks here
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function hooks() {
+		add_action( 'admin_init',                 array( $this, 'setup_settings' ), 10, 0 );
+		add_action( 'wpna_admin_menu_items',      array( $this, 'add_menu_item' ), 10, 0 );
+		add_action( 'update_option_wpna_options', array( $this, 'flush_permalinks' ), 10, 0 );
+		add_action( 'save_post',                  array( $this, 'flush_content_cache' ), 10, 1 );
+		add_action( 'save_post',                  array( $this, 'save_post_meta' ), 10, 3 );
+
+		add_filter( 'wpna_post_meta_box_content_tabs', array( $this, 'register_post_meta_box_tabs' ), 10, 1 );
+
+		// Form sanitization filters
+		add_filter( 'wpna_sanitize_option-fbia_enable',            'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_authorise_id',      'absint', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_style',             'sanitize_text_field', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_image_likes',       'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_image_comments',    'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_credits',           'sanitize_text_field', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_copyright',         'sanitize_text_field', 10, 1 );
+		// add_filter( 'wpna_sanitize_option-fbia_analytics',        '', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_enable_ads',        'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_auto_ad_placement', 'wpna_switchval', 10, 1 );
+		// add_filter( 'wpna_sanitize_option-fbia_ad_code', '', 10, 1 );
+
+		// Post meta sanitization filters
+		add_filter( 'wpna_sanitize_post_meta-fbia_style',             'sanitize_text_field', 10, 1 );
+		add_filter( 'wpna_sanitize_post_meta-fbia_image_likes',       'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_post_meta-fbia_image_comments',    'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_post_meta-fbia_credits',           'sanitize_text_field', 10, 1 );
+		add_filter( 'wpna_sanitize_post_meta-fbia_copyright',         'sanitize_text_field', 10, 1 );
+		// add_filter( 'wpna_sanitize_post_meta-fbia_analytics',        '', 10, 1 );
+		add_filter( 'wpna_sanitize_post_meta-fbia_enable_ads',        'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_post_meta-fbia_auto_ad_placement', 'wpna_switchval', 10, 1 );
+		// add_filter( 'wpna_sanitize_post_meta-fbia_ad_code', '', 10, 1 );
+
+		if ( wpna_switch_to_boolean( wpna_get_option('fbia_enable') ) ) {
+			add_action( 'wp_head', array( $this, 'output_authorisation_id' ), 10, 0 );
+		}
+	}
+
+	/**
+	 * Registers the submenu item
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function add_menu_item() {
+		$page_hook = add_submenu_page(
+			'wp_native_articles',
+			__( 'Facebook Instant Articles', 'wp-native-articles' ),
+			__( 'Facebook Instant Articles', 'wp-native-articles' ),
+			'manage_options',
+			$this->page_slug,
+			[ $this, 'output_callback' ]
+		);
+
+		add_action( 'load-' . $page_hook, array( $this, 'setup_tabs' ) );
+		add_action( 'load-' . $page_hook, array( $this, 'setup_meta_boxes' ) );
+
+		// Custom action for adding more menu items
+		do_action( 'wpna_facebook_admin_menu_item', $page_hook );
+	}
+
+	/**
+	 * Outputs the main HTML structure for the page
+	 *
+	 * @access public
+	 * @return nul
+	 */
+	public function output_callback() {
+		?>
+		<div class="wrap">
+			<?php settings_errors(); ?>
+			<div id="icon-tools" class="icon32"></div>
+			<h1><?php esc_html_e( 'Facebook Instant Articles', 'wp-native-articles' ); ?></h1>
+			<div class="wrap">
+				<?php $this->tabs->tabs_nav(); ?>
+				<?php $this->tabs->tabs_content(); ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Use the Tabs helper to setup tabs on this page
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_tabs() {
+		$this->tabs = new WPNA_Helper_Tabs();
+
+		$this->tabs->register_tab(
+			'general',
+			__( 'General', 'wp-native-articles' ),
+			$this->page_url(),
+			array( $this, 'general_tab_callback' ),
+			true
+		);
+
+		/**
+		 * Called after the first tab has been setup for this page.
+		 * Passes the tabs in so it can be modified, other tabs added etc.
+		 *
+		 * @param WPNA_Helper_Tabs $this->tabs
+		 */
+		do_action( 'wpna_facebook_admin_tabs', $this->tabs );
+	}
+
+	/**
+	 * Setup all the metaboxes for this page
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_meta_boxes() {
+		$screen = get_current_screen();
+
+		// Trigger the add_meta_boxes hooks to allow meta boxes to be added
+		do_action( 'add_meta_boxes_' . $screen->id, null );
+		do_action( 'add_meta_boxes', $screen->id, null );
+
+		// Add screen option: user can choose between 1 or 2 columns (default 2)
+		add_screen_option( 'layout_columns', array( 'max' => 2, 'default' => 2 ) );
+	}
+
+	/**
+	 * Register sections and settings fields
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_settings() {
+		register_setting( 'wpna_facebook_general', 'wpna_options', 'wpna_sanitize_options' );
+
+		add_settings_section(
+			'wpna_facebook_general',
+			__( 'General', 'wp-native-articles' ),
+			[ $this, 'facebook_general_callback' ],
+			$this->page_slug
+		);
+
+		add_settings_field(
+			'fbia_enable',
+			'<label for="fbia_enable">' . esc_html__( 'Enable', 'wp-native-articles' ) . '</label>',
+			[ $this, 'enable_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_authorise_id',
+			'<label for="fbia_authorise_id">' . esc_html__( 'Authorisation ID', 'wp-native-articles' ) . '</label>',
+			[ $this, 'authorise_id_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_style',
+			'<label for="fbia_style">' . esc_html__( 'Article Style', 'wp-native-articles' ) . '</label>',
+			[ $this, 'style_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_image_likes',
+			'<label for="fbia_image_likes">' . esc_html__( 'Image Likes', 'wp-native-articles' ) . '</label>',
+			[ $this, 'image_likes_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_image_comments',
+			'<label for="fbia_image_comments">' . esc_html__( 'Image Comments', 'wp-native-articles' ) . '</label>',
+			[ $this, 'image_comments_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_credits',
+			'<label for="fbia_credits">' . esc_html__( 'Default Article Credits', 'wp-native-articles' ) . '</label>',
+			[ $this, 'default_credits_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_copyright',
+			'<label for="fbia_copyright">' . esc_html__( 'Default Article Copyright', 'wp-native-articles' ) . '</label>',
+			[ $this, 'default_copyright_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_analytics',
+			'<label for="fbia_analytics">' . esc_html__( 'Analytics Code', 'wp-native-articles' ) . '</label>',
+			[ $this, 'analytics_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_enable_ads',
+			'<label for="fbia_enable_ads">' . esc_html__( 'Enable Ads', 'wp-native-articles' ) . '</label>',
+			[ $this, 'enable_ads_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_auto_ad_placement',
+			'<label for="fbia_auto_ad_placement">' . esc_html__( 'Auto Place Ads', 'wp-native-articles' ) . '</label>',
+			[ $this, 'auto_ad_placement_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+		add_settings_field(
+			'fbia_ad_code',
+			'<label for="fbia_ad_code">' . esc_html__( 'Ad Code', 'wp-native-articles' ) . '</label>',
+			[ $this, 'ad_code_callback' ],
+			$this->page_slug,
+			'wpna_facebook_general'
+		);
+
+	}
+
+	/**
+	 * Output the settings field for the general FB admin tab
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function general_tab_callback() {
+		?>
+		<form action="options.php" method="post">
+			<?php settings_fields( 'wpna_facebook_general' ); ?>
+			<?php do_settings_sections( $this->page_slug ); ?>
+			<?php submit_button(); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Output any text at the top of the general settings area
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function facebook_general_callback() {
+		?>
+		<p>
+			<?php esc_html_e( 'Use this section to set generic Instant Article settings.', 'wp-native-articles' ); ?>
+			<?php esc_html_e( 'They can all be overridden on a per article basis with the exception of the `Authorisation ID` field.', 'wp-native-articles' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Whether the Facebook Instant Articles feed is enabled or not.
+	 * Hidden input goes first so it always gets submitted and defaults to false
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function enable_callback() {
+		?>
+		<label for="fbia_enable">
+			<select name="wpna_options[fbia_enable]" id="fbia-enable">
+				<option value="off"<?php selected( wpna_get_option('fbia_enable'), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+				<option value="on"<?php selected( wpna_get_option('fbia_enable'), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+			</select>
+			<?php esc_html_e( 'Enable Facebook Instant Articles', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * The authorisation ID from claiming your URL.
+	 * Outputted in the header
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function authorise_id_callback() {
+		?>
+		<input type="text" name="wpna_options[fbia_authorise_id]" id="fbia_authorise_id" class="regular-text" value="<?php echo sanitize_text_field( wpna_get_option('fbia_authorise_id') ); ?>">
+		<p class="description"><?php esc_html_e( 'The authorisation ID for `Claim Your URL`', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Set the default styling template to use for articles
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function style_callback() {
+		?>
+		<input type="text" name="wpna_options[fbia_style]" id="fbia_style" class="regular-text" value="<?php echo sanitize_text_field( wpna_get_option('fbia_style') ); ?>">
+		<p class="description"><?php esc_html_e( 'Default styling template to use', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Auto adds Like option to images
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function image_likes_callback() {
+		?>
+		<label for="fbia_image_likes">
+			<select name="wpna_options[fbia_image_likes]" id="fbia-image-likes">
+				<option value="off"<?php selected( wpna_get_option('fbia_image_likes'), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+				<option value="on"<?php selected( wpna_get_option('fbia_image_likes'), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+			</select>
+			<?php esc_html_e( 'Add Like overlay for every image', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Auto adds Comments option to images
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function image_comments_callback() {
+		?>
+		<label for="fbia_image_comments">
+			<select name="wpna_options[fbia_image_comments]" id="fbia-image-comments">
+				<option value="off"<?php selected( wpna_get_option('fbia_image_comments'), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+				<option value="on"<?php selected( wpna_get_option('fbia_image_comments'), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+			</select>
+			<?php esc_html_e( 'Add Comments overlay for every image', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Set the default credits for each article
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function default_credits_callback() {
+		?>
+		<input type="text" name="wpna_options[fbia_credits]" id="fbia_credits" class="regular-text" value="<?php echo sanitize_text_field( wpna_get_option('fbia_credits') ); ?>">
+		<p class="description"><?php esc_html_e( 'Default credits applied to the bottom of every article', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Set the default copyright for each article
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function default_copyright_callback() {
+		?>
+		<input type="text" name="wpna_options[fbia_copyright]" id="fbia_copyright" class="regular-text" value="<?php echo sanitize_text_field( wpna_get_option('fbia_copyright') ); ?>">
+		<p class="description"><?php esc_html_e( 'Default copyright applied to the bottom of every article', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Analytics code to use in each article
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function analytics_callback() {
+		?>
+		<textarea name="wpna_options[fbia_analytics]" rows="10" cols="50"  id="fbia_analytics" class="large-text code"><?php echo esc_textarea( wpna_get_option('fbia_analytics') ); ?></textarea>
+		<p class="description"><?php esc_html_e( 'Analytics code to be used in every article. Auto wrapped in an iFrame', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Enable Ads in your Facebook instant articles.
+	 * Can be overridden on a per article basis.
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function enable_ads_callback() {
+		?>
+		<label for="fbia_enable_ads">
+			<select name="wpna_options[fbia_enable_ads]" id="fbia-enable-ads">
+				<option value="off"<?php selected( wpna_get_option('fbia_enable_ads'), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+				<option value="on"<?php selected( wpna_get_option('fbia_enable_ads'), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+			</select>
+			<?php esc_html_e( 'Enable ads in Instant Articles', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Set the default styling template to use for articles
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function auto_ad_placement_callback() {
+		?>
+		<label for="fbia_auto_ad_placement">
+			<select name="wpna_options[fbia_auto_ad_placement]" id="fbia-auto-ad-placement">
+				<option value="off"<?php selected( wpna_get_option('fbia_auto_ad_placement'), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+				<option value="on"<?php selected( wpna_get_option('fbia_auto_ad_placement'), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+			</select>
+			<?php esc_html_e( 'Allow Facebook to auto position your ads in articles', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Set the default styling template to use for articles
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function ad_code_callback() {
+		?>
+		<textarea name="wpna_options[fbia_ad_code]" rows="10" cols="50" id="fbia_ad_code" class="large-text code"><?php echo esc_textarea( wpna_get_option('fbia_ad_code') ); ?></textarea>
+		<p class="description"><?php esc_html_e( 'Ad code for displaying your ads', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Register the facebook settings tab on the post meta box
+	 *
+	 * @todo Refactor. Tabs class?
+	 *
+	 * @access public
+	 * @param  array $tabs Existing tabs
+	 * @return array
+	 */
+	public function register_post_meta_box_tabs( $tabs ) {
+
+		$tabs[] = array(
+			'key'      => 'fbia_settings',
+			'title'    => esc_html__( 'Settings', 'wp-native-articles' ),
+			'callback' => array( $this, 'fbia_settings_post_meta_box_callback' ),
+		);
+
+		return $tabs;
+	}
+
+	/**
+	 * Output HTML for the Facebook settings post meta box tab
+	 *
+	 * @todo Publish button
+	 * @todo Swtich to hooks for fields
+	 *
+	 * @access public
+	 * @param  WP_Post $post Global post object
+	 * @return null
+	 */
+	public function fbia_settings_post_meta_box_callback( $post ) {
+		?>
+		<h3><?php esc_html_e( 'Override Default Values', 'wp-native-articles' ); ?></h3>
+		<p class="description"><?php esc_html_e( 'Use these settings to override global values for this post only', 'wp-native-articles' ); ?></p>
+
+		<div class="pure-form pure-form-aligned">
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-style"><?php esc_html_e( 'Override Style Template', 'wp-native-articles' ); ?></label>
+					<input type="text" name="fbia_style" id="fbia-style" placeholder="<?php echo esc_attr( wpna_get_option('fbia_style') ); ?>" value="<?php echo sanitize_text_field( get_post_meta( get_the_ID(), 'fbia_style', true ) ); ?>">
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-image-likes"><?php esc_html_e( 'Image Likes', 'wp-native-articles' ); ?></label>
+					<select name="fbia_image_likes" id="fbia-image-likes">
+						<option></option>
+						<option value="off"<?php selected( get_post_meta( get_the_ID(), 'fbia_image_likes', true ), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+						<option value="on"<?php selected( get_post_meta( get_the_ID(), 'fbia_image_likes', true ), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+					</select>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-image-comments"><?php esc_html_e( 'Image Comments', 'wp-native-articles' ); ?></label>
+					<select name="fbia_image_comments" id="fbia-image-comments">
+						<option></option>
+						<option value="off"<?php selected( get_post_meta( get_the_ID(), 'fbia_image_comments', true ), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+						<option value="on"<?php selected( get_post_meta( get_the_ID(), 'fbia_image_comments', true ), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+					</select>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-credits"><?php esc_html_e( 'Credits', 'wp-native-articles' ); ?></label>
+					<input type="text" name="fbia_credits" id="fbia-credits" placeholder="<?php echo esc_attr( wpna_get_option('fbia_credits') ); ?>" value="<?php echo sanitize_text_field( get_post_meta( get_the_ID(), 'fbia_credits', true ) ); ?>">
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-copyright"><?php esc_html_e( 'Copyright', 'wp-native-articles' ); ?></label>
+					<input type="text" name="fbia_copyright" id="fbia-copyright" placeholder="<?php echo esc_attr( wpna_get_option('fbia_copyright') ); ?>" value="<?php echo sanitize_text_field( get_post_meta( get_the_ID(), 'fbia_copyright', true ) ); ?>">
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-analytics"><?php esc_html_e( 'Analytics', 'wp-native-articles' ); ?></label>
+					<textarea name="fbia_analytics" rows="6" cols="50" class="code" placeholder="<?php echo esc_attr( wpna_get_option('fbia_analytics') ); ?>"><?php echo esc_textarea( get_post_meta( get_the_ID(), 'fbia_analytics', true ) ); ?></textarea>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-enable-ads-override"><?php esc_html_e( 'Enable Ads', 'wp-native-articles' ); ?></label>
+					<select name="fbia_enable_ads" id="fbia-enable-ads">
+						<option></option>
+						<option value="off"<?php selected( get_post_meta( get_the_ID(), 'fbia_enable_ads', true ), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+						<option value="on"<?php selected( get_post_meta( get_the_ID(), 'fbia_enable_ads', true ), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+					</select>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-auto-ad-placement"><?php esc_html_e( 'Auto Place Ads', 'wp-native-articles' ); ?></label>
+					<select name="fbia_auto_ad_placement" id="fbia-auto-ad-placement">
+						<option></option>
+						<option value="off"<?php selected( get_post_meta( get_the_ID(), 'fbia_auto_ad_placement', true ), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+						<option value="on"<?php selected( get_post_meta( get_the_ID(), 'fbia_auto_ad_placement', true ), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+					</select>
+				</div>
+			</fieldset>
+
+			<fieldset>
+				<div class="pure-control-group">
+					<label for="fbia-ad-code"><?php esc_html_e( 'Ad Code', 'wp-native-articles' ); ?></label>
+					<textarea name="fbia_ad_code" rows="10" cols="50" class="code" placeholder="<?php echo esc_attr( wpna_get_option('fbia_ad_code') ); ?>"><?php echo esc_textarea( get_post_meta( get_the_ID(), 'fbia_ad_code', true ) ); ?></textarea>
+				</div>
+			</fieldset>
+
+			<?php wp_nonce_field( 'wpna_save_post_meta-' . get_the_ID(), '_wpna_nonce' ); ?>
+		</div>
+
+		<?php
+	}
+
+	/**
+	 * Save the new meta field data
+	 *
+	 * @todo Check permissions
+	 *
+	 * @access public
+	 * @param  int    $post_id The post ID.
+	 * @param  post   $post    The post object.
+	 * @param  bool   $update  Whether this is an existing post being updated or not.
+	 * @return null
+	 */
+	public function save_post_meta( $post_id, $post, $update ) {
+
+		// Don't save if it's an autosave
+		if ( wp_is_post_autosave( $post_id ) )
+			return;
+
+		// Don't save if it's a revision
+		if ( wp_is_post_revision( $post_id ) )
+			return;
+
+		// Verify that the input is coming from the proper form
+		if ( ! isset( $_POST['_wpna_nonce'] ) || ! wp_verify_nonce( $_POST['_wpna_nonce'], 'wpna_save_post_meta-' . $post_id ) ) {
+			return;
+		}
+
+		// Make sure the user has permissions to post
+		if ( 'post' == $_POST['post_type'] ) {
+			if ( ! current_user_can( 'edit_post', $post_id ) ) {
+				return;
+			}
+		}
+
+		// Nothing fancy, let's just buid our own data array
+		$field_keys = array(
+			'fbia_style',
+			'fbia_image_likes',
+			'fbia_image_comments',
+			'fbia_credits',
+			'fbia_copyright',
+			'fbia_analytics',
+			'fbia_enable_ads',
+			'fbia_auto_ad_placement',
+			'fbia_ad_code',
+		);
+
+		/**
+		 * Use this filter to add any custom fields to the data
+		 * @var array  $field_keys The keys to check
+		 * @var object $post Whether this is an existing post being updated or not.
+		 * @var bool   $update Wheter it's an update or new post
+		 */
+		$field_keys = apply_filters( 'wpna_facebook_post_meta_field_keys', $field_keys, $post, $update );
+
+		// Return all the values from $_POST that have keys in field_keys
+		$values = array_intersect_key( $_POST, array_flip( $field_keys ) );
+
+		// Sanitize using the same hook / filter method as the global options
+		// Each key has a unique filter that can be hooked into to validate
+		$sanitized_values = array();
+		foreach ( $values as $key => $value ) {
+
+			/**
+			 * Use filters to allow sanitizing of individual options
+			 *
+			 * @param mixed  $value  The value to sanitize
+			 * @param string $key    The options name
+			 * @param array  $values All options
+			 */
+			$sanitized_values[ $key ] = apply_filters( 'wpna_sanitize_post_meta-' . $key, $value, $key, $values );
+
+		}
+
+		// Delete any existing rows from the post
+		foreach ( $sanitized_values as $key => $value ) {
+			delete_post_meta( $post->ID, $key );
+		}
+
+		// Only save the data that has actually been set.
+		// Otherwise we create unnecessary meta rows
+		$sanitized_values = array_filter( $sanitized_values );
+
+		// Save the new meta
+		foreach ( $sanitized_values as $key => $value ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+
+	}
+
+	/**
+	 * After the Facebook options are updated flush the permalink rules
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function flush_permalinks() {
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * Whenever a post is updated we need to flush the posts content flash
+	 *
+	 * @access public
+	 * @param  int  $post_id
+	 * @return null
+	 */
+	public function flush_content_cache( $post_id ) {
+		delete_transient( 'wpna_facebook_post_content_' . $post_id );
+	}
+
+	/**
+	 * Outputs the FB IA authorisation ID meta tag in the header
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function output_authorisation_id() {
+		if ( $value = wpna_get_option('fbia_authorise_id') )
+			printf( '<meta property="fb:pages" content="%s" />', esc_attr( $value ) );
+	}
+
+}
+

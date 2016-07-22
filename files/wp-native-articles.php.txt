@@ -1,0 +1,112 @@
+<?php
+/**
+ * Plugin Name: WP Native Articles
+ * Description: Adds support for Facebook Instant Articles, Apple News and Google Accelerated Mobile Pages to your site
+ * Author: OzTheGreat (WPArtisan)
+ * Author URI: https://wpartisan.me
+ * Version: 0.0.1
+ * Plugin URI: https://wp-native-articles.com
+ *
+ */
+
+// Exit if accessed directly
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+// Define the current version
+define( 'WPNA_VERSION', '0.0.1' );
+
+// Define the plugin base path
+define( 'WPNA_BASE_PATH', dirname( __FILE__ ) );
+
+
+/**
+ * A global function that kicks everything off.
+ * Really just to stop everything polluting the
+ * global namespace.
+ *
+ * @return null
+ */
+function wpna_initialise() {
+
+	// Register the plugin activation hook
+	require WPNA_BASE_PATH . '/class-wpna-activator.php';
+	register_activation_hook( __FILE__, array( 'WPNA_Activator', 'run' ) );
+
+	// Register the plugin deactivation hook
+	require WPNA_BASE_PATH . '/class-wpna-deactivator.php';
+	register_deactivation_hook( __FILE__, array( 'WPNA_Deactivator', 'run' ) );
+
+
+	// Load the plugin updator
+	// require WPNA_BASE_PATH . '/includes/class-pluginUpdateChecker_2_0.php';
+	// $wp_security_update_checker = new PluginUpdateChecker_2_0 (
+	// 	'https://kernl.us/api/v1/updates/56a63dcf257673b76405b880/',
+	// 	__FILE__,
+	// 	'wpna',
+	// 	6,
+	// 	'wp_security_updates'
+	// );
+	// $wp_security_update_checker->purchaseCode = get_site_option( 'wp_security_key' );
+
+
+	//
+	// Global functions and helper files
+	//
+
+	// Load the helper class
+	require WPNA_BASE_PATH . '/includes/helper.php';
+
+	// Setup the global options array
+	$GLOBALS['wpna_options'] = wpna_get_options();
+
+	// Load the sanitization class
+	require WPNA_BASE_PATH . '/includes/sanitization.php';
+
+
+	//
+	// Classes that register hooks and do stuff
+	//
+
+	// Load the Facebook SDK
+	require WPNA_BASE_PATH . '/includes/facebook-sdk/src/facebook.php';
+
+	// Load the admin tabs helper class
+	require WPNA_BASE_PATH . '/includes/class-wpna-helper-tabs.php';
+
+	// Load the multisite functionality
+	if ( is_multisite() ) {
+		require WPNA_BASE_PATH . '/includes/class-wpna-multisite-admin.php';
+		$wpna_multisite_admin = new WPNA_Multisite_Admin();
+	}
+
+	// Load the base admin class & interface
+	require WPNA_BASE_PATH . '/includes/class-wpna-admin-base.php';
+	require WPNA_BASE_PATH . '/includes/interface-wpna-admin-base.php';
+
+	// Load the main admin section
+	require WPNA_BASE_PATH . '/includes/class-wpna-admin.php';
+	$wpna_admin = new WPNA_Admin();
+
+	// Load the help admin section
+	require WPNA_BASE_PATH . '/lib/class-wpna-support-admin.php';
+	$wpna_support_admin = new WPNA_Support_Admin();
+
+	// Load Facebook Instant Articles functionality
+	require WPNA_BASE_PATH . '/lib/class-wpna-facebook-admin.php';
+	require WPNA_BASE_PATH . '/lib/class-wpna-facebook-feed.php';
+	require WPNA_BASE_PATH . '/lib/class-wpna-facebook-api.php';
+	$wpna_facebook_admin = new WPNA_Facebook_Admin();
+	$wpna_facebook_feed = new WPNA_Facebook_Feed();
+	$wpna_facebook_api = new WPNA_Facebook_API();
+
+	// Facebook post object. Used in the template
+	require WPNA_BASE_PATH . '/lib/class-wpna-facebook-post.php';
+
+	// Load the Facebook post content parser
+	require WPNA_BASE_PATH . '/lib/class-wpna-facebook-content-parser.php';
+	$wpna_facebook_content = new WPNA_Facebook_Content_Parser();
+
+}
+
+wpna_initialise();
+

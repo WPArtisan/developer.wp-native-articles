@@ -1,0 +1,19 @@
+<item>
+	<title><?php echo esc_html( $post->get_the_title() ); ?></title>
+	<link><?php echo esc_url( $post->get_permalink() ); ?></link>
+	<content:encoded><![CDATA[
+		<?php include wpna_locate_template( 'facebook-instant-articles-item-content' ); ?>
+	]]></content:encoded>
+	<guid isPermaLink="false"><?php echo esc_url( get_the_guid() ); ?></guid>
+	<description><![CDATA[<?php echo esc_html( $post->get_the_excerpt() ); ?>]]></description>
+	<pubDate><?php echo esc_html( $post->get_publish_date_iso() ); ?></pubDate>
+	<modDate><?php echo esc_html( $post->get_modified_date_iso() ); ?></modDate>
+
+	<?php if ( ! empty( $authors = $post->get_authors() ) ) : ?>
+		<?php foreach ( (array) $authors as $author ) : ?>
+			<author><?php echo esc_html( $author->display_name ); ?></author>
+		<?php endforeach; ?>
+	<?php endif; ?>
+
+</item>
+

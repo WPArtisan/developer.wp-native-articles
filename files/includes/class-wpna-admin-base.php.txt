@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * Base admin page class.
+ *
+ * A base admin page class that all other
+ * admin pages should extend
+ *
+ * @author OzTheGreat
+ * @since  0.0.5
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+abstract class WPNA_Admin_Base {
+
+	/**
+	 * Holds the slug of the current page
+	 *
+	 * @access public
+	 * @var    array
+	 */
+	public $page_slug;
+
+	/**
+	 * Whenever any module is loaded fire off
+	 * the hooks method by default.
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function __construct() {
+		$this->hooks();
+	}
+
+	/**
+	 * Returns the full url to the current page
+	 *
+	 * @access public
+	 * @return string
+	 */
+	public function page_url( $params = array() ) {
+		$query_args = array_merge( array( 'page' => $this->page_slug ), $params );
+		return add_query_arg( $query_args, admin_url( 'admin.php' ) );
+	}
+
+}
+

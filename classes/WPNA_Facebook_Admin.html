@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta charset="utf-8"/>
+    <title>API Documentation</title>
+    <meta name="author" content=""/>
+    <meta name="description" content=""/>
+
+    <link href="../css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/prism.css" rel="stylesheet" media="all"/>
+    <link href="../css/template.css" rel="stylesheet" media="all"/>
+    
+    <!--[if lt IE 9]>
+    <script src="../js/html5.js"></script>
+    <![endif]-->
+    <script src="../js/jquery-1.11.0.min.js"></script>
+    <script src="../js/ui/1.10.4/jquery-ui.min.js"></script>
+    <script src="../js/bootstrap.min.js"></script>
+    <script src="../js/jquery.smooth-scroll.js"></script>
+    <script src="../js/prism.min.js"></script>
+    <!-- TODO: Add http://jscrollpane.kelvinluck.com/ to style the scrollbars for browsers not using webkit-->
+    <script type="text/javascript">
+    function loadExternalCodeSnippets() {
+        Array.prototype.slice.call(document.querySelectorAll('pre[data-src]')).forEach(function (pre) {
+            var src = pre.getAttribute('data-src');
+            var extension = (src.match(/\.(\w+)$/) || [, ''])[1];
+            var language = 'php';
+
+            var code = document.createElement('code');
+            code.className = 'language-' + language;
+
+            pre.textContent = '';
+
+            code.textContent = 'Loading…';
+
+            pre.appendChild(code);
+
+            var xhr = new XMLHttpRequest();
+
+            xhr.open('GET', src, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4) {
+
+                    if (xhr.status < 400 && xhr.responseText) {
+                        code.textContent = xhr.responseText;
+
+                        Prism.highlightElement(code);
+                    }
+                    else if (xhr.status >= 400) {
+                        code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                    }
+                    else {
+                        code.textContent = '✖ Error: File does not exist or is empty';
+                    }
+                }
+            };
+
+            xhr.send(null);
+        });
+    }
+
+    $(document).ready(function(){
+        loadExternalCodeSnippets();
+    });
+    $('#source-view').on('shown', function () {
+        loadExternalCodeSnippets();
+    })
+</script>
+
+    <link rel="shortcut icon" href="../images/favicon.ico"/>
+    <link rel="apple-touch-icon" href="../images/apple-touch-icon.png"/>
+    <link rel="apple-touch-icon" sizes="72x72" href="../images/apple-touch-icon-72x72.png"/>
+    <link rel="apple-touch-icon" sizes="114x114" href="../images/apple-touch-icon-114x114.png"/>
+</head>
+<body>
+
+<div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                <i class="icon-ellipsis-vertical"></i>
+            </a>
+            <a class="brand" href="../index.html">API Documentation</a>
+
+            <div class="nav-collapse">
+                <ul class="nav pull-right">
+                                        <li class="dropdown" id="charts-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Charts <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../graphs/class.html">
+                                    <i class="icon-list-alt"></i>&#160;Class hierarchy diagram
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="reports-menu">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Reports <b class="caret"></b>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="../reports/errors.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Errors <span class="label label-info pull-right">266</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/markers.html">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Markers <span class="label label-info pull-right">19</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="../reports/deprecated.html">
+                                                                                                                                                                                                                                                                                                                                                <i class="icon-list-alt"></i>&#160;Deprecated <span class="label label-info pull-right">3</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <!--<div class="go_to_top">-->
+    <!--<a href="#___" style="color: inherit">Back to top&#160;&#160;<i class="icon-upload icon-white"></i></a>-->
+    <!--</div>-->
+</div>
+
+<div id="___" class="container-fluid">
+        <section class="row-fluid">
+        <div class="span2 sidebar">
+                                <div class="accordion" style="margin-bottom: 0">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                                    <a class="accordion-toggle " data-toggle="collapse" data-target="#namespace-1888303862"></a>
+                                <a href="../namespaces/default.html" style="margin-left: 30px; padding-left: 0">\</a>
+            </div>
+            <div id="namespace-1888303862" class="accordion-body collapse in">
+                <div class="accordion-inner">
+
+                    
+                    <ul>
+                                                    <li class="interface"><a href="../classes/WPNA_Admin_Interface.html">WPNA_Admin_Interface</a></li>
+                                                                                                    <li class="class"><a href="../classes/BaseFacebook.html">BaseFacebook</a></li>
+                                                    <li class="class"><a href="../classes/Facebook.html">Facebook</a></li>
+                                                    <li class="class"><a href="../classes/FacebookApiException.html">FacebookApiException</a></li>
+                                                    <li class="class"><a href="../classes/FBAccessToken.html">FBAccessToken</a></li>
+                                                    <li class="class"><a href="../classes/FBCode.html">FBCode</a></li>
+                                                    <li class="class"><a href="../classes/FBGetCurrentURLFacebook.html">FBGetCurrentURLFacebook</a></li>
+                                                    <li class="class"><a href="../classes/FBPublic.html">FBPublic</a></li>
+                                                    <li class="class"><a href="../classes/FBPublicCookie.html">FBPublicCookie</a></li>
+                                                    <li class="class"><a href="../classes/FBPublicGetAccessTokenFromCode.html">FBPublicGetAccessTokenFromCode</a></li>
+                                                    <li class="class"><a href="../classes/FBPublicState.html">FBPublicState</a></li>
+                                                    <li class="class"><a href="../classes/FBRecordMakeRequest.html">FBRecordMakeRequest</a></li>
+                                                    <li class="class"><a href="../classes/FBRecordURL.html">FBRecordURL</a></li>
+                                                    <li class="class"><a href="../classes/FBRewrite.html">FBRewrite</a></li>
+                                                    <li class="class"><a href="../classes/PersistentFBPublic.html">PersistentFBPublic</a></li>
+                                                    <li class="class"><a href="../classes/PHPSDKTestCase.html">PHPSDKTestCase</a></li>
+                                                    <li class="class"><a href="../classes/TransientFacebook.html">TransientFacebook</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Activator.html">WPNA_Activator</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Admin.html">WPNA_Admin</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Admin_Base.html">WPNA_Admin_Base</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Deactivator.html">WPNA_Deactivator</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Admin.html">WPNA_Facebook_Admin</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_API.html">WPNA_Facebook_API</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Content_Parser.html">WPNA_Facebook_Content_Parser</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Feed.html">WPNA_Facebook_Feed</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Facebook_Post.html">WPNA_Facebook_Post</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Helper_Tabs.html">WPNA_Helper_Tabs</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Multisite_Admin.html">WPNA_Multisite_Admin</a></li>
+                                                    <li class="class"><a href="../classes/WPNA_Support_Admin.html">WPNA_Support_Admin</a></li>
+                                            </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        </div>
+    </section>
+    <section class="row-fluid">
+        <div class="span10 offset2">
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <nav>
+                                                <a href="../namespaces/default.html">\</a> <i class="icon-level-up"></i>
+                                            </nav>
+                    <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal"><i class="icon-code"></i></a>
+
+                    <h1><small>\</small>WPNA_Facebook_Admin</h1>
+                    <p><em></em></p>
+                    
+                    
+                                        
+                    <section id="summary">
+                        <h2>Summary</h2>
+                        <section class="row-fluid heading">
+                            <section class="span4">
+                                <a href="#methods">Methods</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#properties">Properties</a>
+                            </section>
+                            <section class="span4">
+                                <a href="#constants">Constants</a>
+                            </section>
+                        </section>
+                        <section class="row-fluid public">
+                            <section class="span4">
+                                                                    <a href="../classes/WPNA_Admin_Base.html#method___construct" class="">__construct()</a><br />
+                                                                    <a href="../classes/WPNA_Admin_Base.html#method_page_url" class="">page_url()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_hooks" class="">hooks()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_add_menu_item" class="">add_menu_item()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_output_callback" class="">output_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_setup_tabs" class="">setup_tabs()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_setup_meta_boxes" class="">setup_meta_boxes()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_setup_settings" class="">setup_settings()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_general_tab_callback" class="">general_tab_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_facebook_general_callback" class="">facebook_general_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_enable_callback" class="">enable_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_authorise_id_callback" class="">authorise_id_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_style_callback" class="">style_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_image_likes_callback" class="">image_likes_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_image_comments_callback" class="">image_comments_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_default_credits_callback" class="">default_credits_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_default_copyright_callback" class="">default_copyright_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_analytics_callback" class="">analytics_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_enable_ads_callback" class="">enable_ads_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_auto_ad_placement_callback" class="">auto_ad_placement_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_ad_code_callback" class="">ad_code_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_register_post_meta_box_tabs" class="">register_post_meta_box_tabs()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_fbia_settings_post_meta_box_callback" class="">fbia_settings_post_meta_box_callback()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_save_post_meta" class="">save_post_meta()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_flush_permalinks" class="">flush_permalinks()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_flush_content_cache" class="">flush_content_cache()</a><br />
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#method_output_authorisation_id" class="">output_authorisation_id()</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <a href="../classes/WPNA_Facebook_Admin.html#property_page_slug" class="">$page_slug</a><br />
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No constants found</em>
+                                                            </section>
+                        </section>
+                        <section class="row-fluid protected">
+                            <section class="span4">
+                                                                    <em>No protected methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No protected properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                        <section class="row-fluid private">
+                            <section class="span4">
+                                                                    <em>No private methods found</em>
+                                                            </section>
+                            <section class="span4">
+                                                                    <em>No private properties found</em>
+                                                            </section>
+                            <section class="span4">
+                                <em>N/A</em>
+                            </section>
+                        </section>
+                    </section>
+                </div>
+                <aside class="span4 detailsbar">
+                                        
+                    
+                    <dl>
+                        <dt>File</dt>
+                            <dd><a href="../files/lib.class-wpna-facebook-admin.html"><div class="path-wrapper">lib/class-wpna-facebook-admin.php</div></a></dd>
+                                                <dt>Package</dt>
+                            <dd><div class="namespace-wrapper">Default</div></dd>
+                                                <dt>Class hierarchy</dt>
+                            <dd class="hierarchy">
+                                                                                                                                                                                                                                                                                                
+                                        <div class="namespace-wrapper"><a href="../classes/WPNA_Admin_Base.html">\WPNA_Admin_Base</a></div>
+                                                                                                    <div class="namespace-wrapper">\WPNA_Facebook_Admin</div>
+                            </dd>
+
+                                                                            <dt>Implements</dt>
+                                                        <dd><a href="../classes/WPNA_Admin_Interface.html"><div class="namespace-wrapper">\WPNA_Admin_Interface</div></a></dd>
+                        
+                        
+                        
+                        
+                                                                        </dl>
+                    <h2>Tags</h2>
+                    <table class="table table-condensed">
+                                            <tr><td colspan="2"><em>None found</em></td></tr>
+                                        </table>
+                </aside>
+            </div>
+
+                        
+                                    <a id="properties" name="properties"></a>
+            <div class="row-fluid">
+                <div class="span8 content class">
+                    <h2>Properties</h2>
+                </div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="property_page_slug" name="property_page_slug" class="anchor"></a>
+            <article class="property">
+                <h3 class="public ">$page_slug</h3>
+                <pre class="signature">$page_slug : string</pre>
+                <p><em>The slug of the current page</em></p>
+                
+
+                                <h4>Type</h4>
+                string
+                                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                        <dl>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                            
+                                    <a id="methods" name="methods"></a>
+            <div class="row-fluid">
+                <div class="span8 content class"><h2>Methods</h2></div>
+                <aside class="span4 detailsbar"></aside>
+            </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method___construct" name="method___construct" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">__construct()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">__construct() : null</pre>
+                <p><em>Whenever any module is loaded fire off
+the hooks method by default.</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/WPNA_Admin_Base.html"><div class="path-wrapper">\WPNA_Admin_Base</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_page_url" name="method_page_url" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">page_url()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">page_url(  <span class="argument">$params = array()</span>) : string</pre>
+                <p><em>Returns the full url to the current page</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td></td>
+                                <td>$params </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    string
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                    <dt>Inherited from</dt>
+                    <dd><a href="../classes/WPNA_Admin_Base.html"><div class="path-wrapper">\WPNA_Admin_Base</div></a></dd>
+                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_hooks" name="method_hooks" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">hooks()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">hooks() : null</pre>
+                <p><em>Register hooks here</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_add_menu_item" name="method_add_menu_item" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">add_menu_item()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">add_menu_item() : null</pre>
+                <p><em>Registers the submenu item</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_output_callback" name="method_output_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">output_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">output_callback() : \nul</pre>
+                <p><em>Outputs the main HTML structure for the page</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    \nul
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_setup_tabs" name="method_setup_tabs" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">setup_tabs()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">setup_tabs() : null</pre>
+                <p><em>Use the Tabs helper to setup tabs on this page</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_setup_meta_boxes" name="method_setup_meta_boxes" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">setup_meta_boxes()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">setup_meta_boxes() : null</pre>
+                <p><em>Setup all the metaboxes for this page</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_setup_settings" name="method_setup_settings" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">setup_settings()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">setup_settings() : null</pre>
+                <p><em>Register sections and settings fields</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_general_tab_callback" name="method_general_tab_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">general_tab_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">general_tab_callback() : null</pre>
+                <p><em>Output the settings field for the general FB admin tab</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_facebook_general_callback" name="method_facebook_general_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">facebook_general_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">facebook_general_callback() : null</pre>
+                <p><em>Output any text at the top of the general settings area</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_enable_callback" name="method_enable_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">enable_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">enable_callback() : null</pre>
+                <p><em>Whether the Facebook Instant Articles feed is enabled or not.</em></p>
+                <p>Hidden input goes first so it always gets submitted and defaults to false</p>
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_authorise_id_callback" name="method_authorise_id_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">authorise_id_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">authorise_id_callback() : null</pre>
+                <p><em>The authorisation ID from claiming your URL.</em></p>
+                <p>Outputted in the header</p>
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_style_callback" name="method_style_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">style_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">style_callback() : null</pre>
+                <p><em>Set the default styling template to use for articles</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_image_likes_callback" name="method_image_likes_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">image_likes_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">image_likes_callback() : null</pre>
+                <p><em>Auto adds Like option to images</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_image_comments_callback" name="method_image_comments_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">image_comments_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">image_comments_callback() : null</pre>
+                <p><em>Auto adds Comments option to images</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_default_credits_callback" name="method_default_credits_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">default_credits_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">default_credits_callback() : null</pre>
+                <p><em>Set the default credits for each article</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_default_copyright_callback" name="method_default_copyright_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">default_copyright_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">default_copyright_callback() : null</pre>
+                <p><em>Set the default copyright for each article</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_analytics_callback" name="method_analytics_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">analytics_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">analytics_callback() : null</pre>
+                <p><em>Analytics code to use in each article</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_enable_ads_callback" name="method_enable_ads_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">enable_ads_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">enable_ads_callback() : null</pre>
+                <p><em>Enable Ads in your Facebook instant articles.</em></p>
+                <p>Can be overridden on a per article basis.</p>
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_auto_ad_placement_callback" name="method_auto_ad_placement_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">auto_ad_placement_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">auto_ad_placement_callback() : null</pre>
+                <p><em>Set the default styling template to use for articles</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_ad_code_callback" name="method_ad_code_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">ad_code_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">ad_code_callback() : null</pre>
+                <p><em>Set the default styling template to use for articles</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_register_post_meta_box_tabs" name="method_register_post_meta_box_tabs" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">register_post_meta_box_tabs()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">register_post_meta_box_tabs(array  <span class="argument">$tabs</span>) : array</pre>
+                <p><em>Register the facebook settings tab on the post meta box</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>array</td>
+                                <td>$tabs </td>
+                                <td><p>Existing tabs</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    array
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr>
+                        <th>
+                            todo
+                        </th>
+                        <td>
+                                                                                            <p>Refactor. Tabs class?</p>
+                                                    </td>
+                    </tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_fbia_settings_post_meta_box_callback" name="method_fbia_settings_post_meta_box_callback" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">fbia_settings_post_meta_box_callback()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">fbia_settings_post_meta_box_callback(\WP_Post  <span class="argument">$post</span>) : null</pre>
+                <p><em>Output HTML for the Facebook settings post meta box tab</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>\WP_Post</td>
+                                <td>$post </td>
+                                <td><p>Global post object</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr>
+                        <th>
+                            todo
+                        </th>
+                        <td>
+                                                                                            <p>Publish button</p>
+                                                                                            <p>Swtich to hooks for fields</p>
+                                                    </td>
+                    </tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_save_post_meta" name="method_save_post_meta" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">save_post_meta()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">save_post_meta(integer  <span class="argument">$post_id</span>, \post  <span class="argument">$post</span>, boolean  <span class="argument">$update</span>) : null</pre>
+                <p><em>Save the new meta field data</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>integer</td>
+                                <td>$post_id </td>
+                                <td><p>The post ID.</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>\post</td>
+                                <td>$post </td>
+                                <td><p>The post object.</p></td>
+                            </tr>
+                                                    <tr>
+                                <td>boolean</td>
+                                <td>$update </td>
+                                <td><p>Whether this is an existing post being updated or not.</p></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr>
+                        <th>
+                            todo
+                        </th>
+                        <td>
+                                                                                            <p>Check permissions</p>
+                                                    </td>
+                    </tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_flush_permalinks" name="method_flush_permalinks" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">flush_permalinks()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">flush_permalinks() : null</pre>
+                <p><em>After the Facebook options are updated flush the permalink rules</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_flush_content_cache" name="method_flush_content_cache" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">flush_content_cache()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">flush_content_cache(integer  <span class="argument">$post_id</span>) : null</pre>
+                <p><em>Whenever a post is updated we need to flush the posts content flash</em></p>
+                
+
+                                    <h4>Parameters</h4>
+                    <table class="table table-condensed table-hover">
+                                                    <tr>
+                                <td>integer</td>
+                                <td>$post_id </td>
+                                <td></td>
+                            </tr>
+                                            </table>
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                    <div class="row-fluid">
+        <div class="span8 content class">
+            <a id="method_output_authorisation_id" name="method_output_authorisation_id" class="anchor"></a>
+            <article class="method">
+                <h3 class="public ">output_authorisation_id()</h3>
+                <a href="#source-view" role="button" class="pull-right btn" data-toggle="modal" style="font-size: 1.1em; padding: 9px 14px"><i class="icon-code"></i></a>
+                <pre class="signature" style="margin-right: 54px;">output_authorisation_id() : null</pre>
+                <p><em>Outputs the FB IA authorisation ID meta tag in the header</em></p>
+                
+
+                
+                
+                                    <h4>Returns</h4>
+                    null
+                                    				
+                            </article>
+        </div>
+        <aside class="span4 detailsbar">
+            <h1><i class="icon-arrow-down"></i></h1>
+                                                            <dl>
+                                                                            </dl>
+            <h2>Tags</h2>
+            <table class="table table-condensed">
+                                    <tr><td colspan="2"><em>None found</em></td></tr>
+                            </table>
+        </aside>
+    </div>
+
+                                                                    </div>
+    </section>
+
+    <div id="source-view" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="source-view-label" aria-hidden="true">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h3 id="source-view-label">class-wpna-facebook-admin.php</h3>
+        </div>
+        <div class="modal-body">
+            <pre data-src="../files/lib/class-wpna-facebook-admin.php.txt" class="language-php line-numbers"></pre>
+        </div>
+    </div>
+
+    <footer class="row-fluid">
+        <section class="span10 offset2">
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <section class="row-fluid footer-sections">
+                        <section class="span4">
+                                                        <h1><i class="icon-code"></i></h1>
+                            <div>
+                                <ul>
+                                                                    </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-bar-chart"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../graphs/class.html">Class Hierarchy Diagram</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                        <section class="span4">
+                                                        <h1><i class="icon-pushpin"></i></h1>
+                            <div>
+                                <ul>
+                                    <li><a href="../reports/errors.html">Errors</a></li>
+                                    <li><a href="../reports/markers.html">Markers</a></li>
+                                </ul>
+                            </div>
+                        </section>
+                    </section>
+                </section>
+            </section>
+            <section class="row-fluid">
+                <section class="span10 offset1">
+                    <hr />
+                    Documentation is powered by <a href="http://www.phpdoc.org/">phpDocumentor </a> and authored
+                    on June 29th, 2016 at 09:39.
+                </section>
+            </section>
+        </section>
+    </footer>
+</div>
+
+</body>
+</html>

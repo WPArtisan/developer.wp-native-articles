@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="<?php echo esc_attr( get_option( 'blog_charset' ) );?>"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+	<channel>
+		<title><?php bloginfo_rss( 'name' ); ?></title>
+		<link><?php bloginfo_rss('url') ?></link>
+		<description><?php bloginfo_rss( 'description' ) ?></description>
+
+		<?php
+			/**
+			 * Use this action to add any custom elements to the channel header
+			 */
+			do_action( 'wpna_facebook_channel_header' );
+		?>
+
+		<?php if ( have_posts() ) : ?>
+			<?php while ( have_posts() ) : the_post(); ?>
+
+				<?php
+					/**
+					 * We want to run a bunch of filters on the content as well
+					 * as setup some up so lets use a custom class
+					 *
+					 * @var WPNA_Facebook_Post
+					 */
+					$post = new WPNA_Facebook_Post( get_the_ID() );
+
+					// Load in the item template
+					include wpna_locate_template( 'facebook-instant-articles-item' );
+				?>
+
+			<?php endwhile; ?>
+
+			<?php
+				/**
+				 * lastBuildDate is the last time the feed was updated.
+				 * For all intensive purposes this will be the same as the
+				 * most recent post's modification date in the query.
+				 *
+				 * Although the inital query for this is ordered by modified
+				 * date we can't trust it hasn't be altered.
+				 */
+				global $posts;
+
+				// Pluck all dates from the posts
+				$post_dates = wp_list_pluck( $posts, 'post_modified' );
+
+				// Order dates by desc
+				arsort( $post_dates );
+
+				/**
+				 * The latest date is now the final element of the array. Pop it off
+				 * Dates are already in the correct format by this point.
+				 *
+				 * Can filter it should you wish. $posts is available globally.
+				 *
+				 * @var string
+				 */
+				$last_modified = apply_filters( 'wpna_facebook_lastbuilddate', array_pop( $post_dates ) );
+
+			?>
+
+			<?php if ( $last_modified ) : ?>
+				<lastBuildDate><?php echo esc_html( $last_modified ); ?></lastBuildDate>
+			<?php endif; ?>
+
+		<?php endif; ?>
+
+		<?php
+			/**
+			 * Use this action to add any custom elements to the channel footer
+			 */
+			do_action( 'wpna_facebook_channel_footer' );
+		?>
+
+	</channel>
+</rss>
+

@@ -1,0 +1,250 @@
+<?php
+
+/**
+ * Helper functions for the plugin
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+if ( ! function_exists( 'wpna_get_option' ) ) :
+
+	/**
+	 * Retrieves a specific WPNA option.
+	 * The second param can set a default value to be
+	 * returned if the option doesn't exist
+	 *
+	 * @param  string $name
+	 * @param  mixed  $default
+	 * @return array
+	 */
+	function wpna_get_option( $name, $default = false ) {
+		global $wpna_options;
+
+		// Setup the default value
+		$value = $default;
+
+		// Check if it exists in the global options array
+		if ( isset( $wpna_options[ $name ] ) )
+			$value = $wpna_options[ $name ];
+
+		/**
+		 * Allows filtering of all option values before they're returned
+		 *
+		 * @var mixed  The value being returned
+		 * @var string The option name
+		 * @var mixed  The default value
+		 */
+		$option = apply_filters( 'wpna_get_option', $value, $name, $default );
+
+		/**
+		 * Allows filtering of a specific option value before it's returned
+		 *
+		 * @var mixed  The value being returned
+		 * @var string The option name
+		 * @var mixed  The default value
+		 */
+		return apply_filters( 'wpna_get_option_' . $name, $value, $name, $default );
+	}
+
+endif;
+
+
+if ( ! function_exists( 'wpna_get_options' ) ) :
+
+	/**
+	 * Retrieves all plugin options from the current blog.
+	 * Use native WP option filters if you want to
+	 *
+	 * @return array
+	 */
+	function wpna_get_options() {
+		global $wpna_options;
+
+		if ( ! $wpna_options )
+			$wpna_options = get_option( 'wpna_options' );
+
+		/**
+		 * Filter the entire options array
+		 *
+		 * @var array $wpna_options
+		 */
+		$wpna_options = apply_filters( 'wpna_get_options', $wpna_options );
+
+		return $wpna_options;
+	}
+
+endif;
+
+if ( ! function_exists( 'wpna_get_post_option' ) ) :
+
+	/**
+	 * Retrieves a specific WPNA Post option.
+	 * Checks the post meta to see if the option is set.
+	 * If it isn't will default to the global WPNA value
+	 *
+	 * @param  string $name
+	 * @param  mixed  $default
+	 * @return array
+	 */
+	function wpna_get_post_option( $post_id, $name, $default = false ) {
+
+		if ( $post_meta = get_post_meta( $post_id, $name, true ) ) {
+			// Get the post specific options
+			$value = $post_meta;
+		} else {
+			// Check if it exists in the global options array
+			$value = wpna_get_option( $name, $default );
+		}
+
+		/**
+		 * Allows filtering of all option values before they're returned
+		 *
+		 * @var mixed  The value being returned
+		 * @var string The option name
+		 * @var mixed  The default value
+		 */
+		$option = apply_filters( 'wpna_get_post_option', $value, $name, $default );
+
+		/**
+		 * Allows filtering of a specific option value before it's returned
+		 *
+		 * @var mixed  The value being returned
+		 * @var string The option name
+		 * @var mixed  The default value
+		 */
+		return apply_filters( 'wpna_get_post_option_' . $name, $value, $name, $default );
+	}
+
+endif;
+
+
+if ( ! function_exists( 'wpna_locate_template' ) ) :
+
+	/**
+	 * Reads the contents of a template file into a string and returns it.
+	 *
+	 * @todo Change to pass params. Conflicting variable names in API
+	 *
+	 * @access public
+	 * @param  string $template File name relative to the plugins template
+	 *                          directory. Optional file extension
+	 * @return string
+	 */
+	function wpna_locate_template( $name ) {
+
+		// Check if there's an extension or not
+		$name .= '.php' !== substr( $name, -4 ) ? '.php' : '' ;
+
+		// locate_template() returns path to file
+		// if either the child theme or the parent theme have overridden the template
+		if ( $overridden_template = locate_template( $name ) )
+			return $overridden_template;
+
+		// If neither the child nor parent theme have overridden the template,
+		// we load the template from the 'templates' sub-directory of the directory this file is in
+		$template_path = WPNA_BASE_PATH . '/templates/' . $name;
+
+		/**
+		 * Alter the path for a template file
+		 *
+		 * @param string $template
+		 * @param string $name
+		 */
+		$template_path = apply_filters( 'wpna_template_path', $template_path, $name );
+
+		return $template_path;
+	}
+
+endif;
+
+
+if ( ! function_exists( 'wpna_get_attachment_id_from_src' ) ) :
+
+	/**
+	 * Get an attachment ID from given a URL.
+	 *
+	 * @link http://wpscholar.com/blog/get-attachment-id-from-wp-image-url/
+	 *
+	 * @access public
+	 * @param string $url
+	 * @return int Attachment ID on success, null on failure
+	 */
+	function wpna_get_attachment_id_from_src( $url ) {
+
+		$attachment_id = null;
+
+		// Strip off any resizing params
+		$url = preg_replace( '/-\d+x\d+(?=\.(jpg|jpeg|png|gif)$)/i', '', $url );
+
+		// Let's check the cache!
+		if ( $attachment_id = wp_cache_get( md5( $url ), 'wpna' ) )
+			return $attachment_id;
+
+		// This will be quickest as it's cached
+		if ( ! $attachment_id && function_exists( 'wpcom_vip_attachment_url_to_postid' ) )
+			$attachment_id = wpcom_vip_attachment_url_to_postid( $url );
+
+		// Only came in in 4.0 so let's be a bit careful
+		if ( ! $attachment_id && function_exists( 'attachment_url_to_postid' ) ) {
+			$attachment_id = attachment_url_to_postid( $url );
+		}
+
+		// If we stil haven't found it let's run ths custom query. It is a tad slow.
+		if ( ! $attachment_id ) {
+
+			$dir = wp_upload_dir();
+
+			if ( strpos( $url, $dir['baseurl'] . '/' ) )
+				return null;
+
+			$file = basename( $url );
+
+			$query_args = array(
+				'no_found_rows'          => true,
+				'update_post_term_cache' => false,
+				'post_type'              => 'attachment',
+				'post_status'            => 'inherit',
+				'fields'                 => 'ids',
+				'meta_query'             => array(
+					array(
+						'value'   => $file,
+						'compare' => 'LIKE',
+						'key'     => '_wp_attachment_metadata',
+					),
+				)
+			);
+
+			$query = new WP_Query( $query_args );
+
+			if ( $query->have_posts() ) {
+
+				foreach ( $query->posts as $post_id ) {
+
+					$meta = wp_get_attachment_metadata( $post_id );
+
+					$original_file       = basename( $meta['file'] );
+					$cropped_image_files = wp_list_pluck( $meta['sizes'], 'file' );
+
+					if ( $original_file === $file || in_array( $file, $cropped_image_files ) ) {
+						$attachment_id = $post_id;
+						break;
+					}
+
+				}
+
+			}
+
+		}
+
+		// Cache the result
+		wp_cache_set( md5( $url ), $attachment_id, 'wpna' );
+
+		return $attachment_id;
+	}
+
+endif;
+

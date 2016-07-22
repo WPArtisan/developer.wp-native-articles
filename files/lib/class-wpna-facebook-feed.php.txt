@@ -1,0 +1,371 @@
+<?php
+
+/**
+ * Setup the Facebook Instant Article RSS Feed
+ *
+ * - Registers a settings tab in the Facebook IA Page
+ * - Creates the RSS feed
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+class WPNA_Facebook_Feed extends WPNA_Admin_Base implements WPNA_Admin_Interface {
+
+	/**
+	 * The slug of the current page
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $page_slug = 'wp_native_articles';
+
+	/**
+	 * Sets up the class
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function __construct() {
+		$this->hooks();
+
+		// Define the feed slug
+		if ( ! defined( 'WPNA_FACEBOOK_IA_SLUG' ) ) {
+			define( 'WPNA_FACEBOOK_IA_SLUG', 'facebook-instant-articles' );
+		}
+	}
+
+	/**
+	 * Register hooks here
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function hooks() {
+		add_action( 'admin_init',                             array( $this, 'setup_settings' ), 10, 0 );
+		add_action( 'wpna_facebook_admin_tabs',               array( $this, 'setup_tabs' ), 10, 1 );
+		add_action( 'update_option_wpna_options',             array( $this, 'flush_feed_query_cache' ), 10, 0 );
+		add_action( 'save_post',                              array( $this, 'flush_feed_query_cache' ), 10, 0 );
+
+		// Form sanitization filters
+		add_filter( 'wpna_sanitize_option-fbia_posts_per_feed',  'absint', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_article_caching', 'boolval', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_modified_only',   'boolval', 10, 1 );
+
+		if ( wpna_get_option('fbia_enable') ) {
+			add_action( 'init',                                array( $this, 'add_feed' ), 10, 0 );
+
+			add_filter( 'posts_request',                       array( $this, 'pre_feed_query_cache' ), 10, 2 );
+			add_filter( 'posts_results',                       array( $this, 'post_feed_query_cache' ), 10, 2 );
+			add_filter( 'pre_get_posts',                       array( $this, 'feed_query' ), 10, 1 );
+			add_filter( 'wp_native_articles_facebook_headers', array( $this, 'feed_headers' ), 10, 0 );
+			add_filter( 'pre_option_playbuzz',                 array( $this, 'enable_playbuzz' ), 10, 1 );
+		}
+	}
+
+	/**
+	 * Use the Tabs helper to setup tabs on this page
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_tabs( $tabs ) {
+		$tabs->register_tab(
+			'feed',
+			__( 'Feed', 'wp-native-articles' ),
+			$this->page_url(),
+			array( $this, 'feed_tab_callback' )
+		);
+	}
+
+	/**
+	 * Register sections and settings fields
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_settings() {
+		register_setting( 'wpna_facebook-feed', 'wpna_options', 'wpna_sanitize_options' );
+
+		add_settings_section(
+			'wpna_facebook-feed_section_1',
+			__( 'RSS Feed', 'wp-native-articles' ),
+			[ $this, 'section_1_callback' ],
+			'wpna_facebook-feed' // This needs to be unique to this tab + Match the one called in do_settings_sections
+		);
+
+		add_settings_field(
+			'fbia_posts_per_feed',
+			'<label for="fbia_posts_per_feed">' . esc_html__( 'Posts Per Feed', 'wp-native-articles' ) . '</label>',
+			[ $this, 'posts_per_feed_callback' ],
+			'wpna_facebook-feed',
+			'wpna_facebook-feed_section_1'
+		);
+
+		add_settings_field(
+			'fbia_article_caching',
+			'<label for="fbia_article_caching">' . esc_html__( 'Cache Article Content', 'wp-native-articles' ) . '</label>',
+			[ $this, 'article_caching_callback' ],
+			'wpna_facebook-feed',
+			'wpna_facebook-feed_section_1'
+		);
+
+		add_settings_field(
+			'fbia_modified_only',
+			'<label for="fbia_modified_only">' . esc_html__( 'Modified Only', 'wp-native-articles' ) . '</label>',
+			[ $this, 'modified_only_callback' ],
+			'wpna_facebook-feed',
+			'wpna_facebook-feed_section_1'
+		);
+	}
+
+	/**
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function feed_tab_callback() {
+		?>
+		<form action="options.php" method="post">
+			<?php settings_fields( 'wpna_facebook-feed' ); ?>
+			<?php do_settings_sections( 'wpna_facebook-feed' ); ?>
+			<?php submit_button(); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Content outputted at the begining of a section
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function section_1_callback() {
+		?>
+		<p>
+			<?php esc_html_e( 'These settings apply to the RSS feed of Instant Articles.', 'wp-native-articles' ); ?>
+			<br />
+			<?php esc_html_e( 'Unlike the API, the RSS feed generates many articles at once. Because of this it is highly recomended you enable caching.', 'wp-native-articles' ); ?>
+			<br />
+			<?php esc_html_e( 'Your feed can be found here:', 'wp-native-articles' ); ?>
+			<a href="<?php echo esc_url( site_url( '/feeds/' . WPNA_FACEBOOK_IA_SLUG ) ); ?>" target="_blank"><?php echo esc_url( site_url( '/feeds/' . WPNA_FACEBOOK_IA_SLUG ) ); ?></a>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Maximum amount of posts to show in the feed. Facebook wont read more
+	 * than 50 so let's default to that
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function posts_per_feed_callback() {
+		?>
+		<input type="number" min="0" step="1" name="wpna_options[fbia_posts_per_feed]" id="fbia_posts_per_feed" class="regular-text" value="<?php echo intval( wpna_get_option('fbia_posts_per_feed') ); ?>" />
+		<p class="description"><?php esc_html_e( 'Limit the maximum amount of articles in the feed.', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Whether to cache the article contents in transients or not.
+	 * Set a hidden field before the checkbox so it defaults to false.
+	 * (Use 0 for false otherwise PHP gets confused)
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function article_caching_callback() {
+		?>
+		<label for="fbia_article_caching">
+			<input type="hidden" name="wpna_options[fbia_article_caching]" value="0">
+			<input type="checkbox" name="wpna_options[fbia_article_caching]" id="fbia_article_caching" class="" value="true"<?php checked( (bool) wpna_get_option('fbia_article_caching') ); ?> />
+			<?php esc_html_e( 'Cache the content of articles in the feed.', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Whether to show only the most recently modified posts.
+	 * Set a hidden field before the checkbox so it defaults to false.
+	 * (Use 0 for false otherwise PHP gets confused)
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function modified_only_callback() {
+		?>
+		<label for="fbia_modified_only">
+			<input type="hidden" name="wpna_options[fbia_modified_only]" value="0">
+			<input type="checkbox" name="wpna_options[fbia_modified_only]" id="fbia_modified_only" class="" value="true"<?php checked( (bool) wpna_get_option('fbia_modified_only') ); ?> />
+			<?php esc_html_e( 'Only show recently modified posts in the feed.', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Playbuzz is only parsed in single articles by default.
+	 * Because feeds are classed as categories the embed code won't
+	 * be inserted. This will enable it.
+	 *
+	 * @access public
+	 * @param  array $playbuzz
+	 * @return array
+	 */
+	public function enable_playbuzz( $playbuzz ) {
+		if ( is_feed( WPNA_FACEBOOK_IA_SLUG ) ) {
+			$playbuzz['embeddedon'] = 'all';
+		}
+
+		return $playbuzz;
+	}
+
+	/**
+	 * Register the Facebook feed
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function add_feed() {
+		add_feed( WPNA_FACEBOOK_IA_SLUG,  array( $this, 'feed' ) );
+	}
+
+	/**
+	 * Our main feed query is very expensive.
+	 * This caches the whole query in transients for 1 hour
+	 *
+	 * @link https://www.reddit.com/r/Wordpress/comments/19crcn/best_practice_for_hijacking_main_loop_and_caching/
+	 *
+	 * @access public
+	 * @param  array    $request
+	 * @param  WP_Query $query
+	 * @return array
+	 */
+	public function pre_feed_query_cache( $request, $query ){
+
+		if ( $query->is_feed( WPNA_FACEBOOK_IA_SLUG ) && $query->is_main_query() && wpna_get_option('fbia_article_caching') ) {
+
+			if ( get_transient( 'wpna_facebook_feed_posts' ) )
+				$request = null;
+
+		}
+
+		return $request;
+	}
+
+	/**
+	 * Our main query is very expensive.
+	 * This will cache it for 1 hour.
+	 * Everytime a post is updated it is also flushed.
+	 *
+	 * @link https://www.reddit.com/r/Wordpress/comments/19crcn/best_practice_for_hijacking_main_loop_and_caching/
+	 *
+	 * @access public
+	 * @param  array    $posts
+	 * @param  WP_Query $query
+	 * @return array
+	 */
+	public function post_feed_query_cache( $posts, $query ){
+
+		if ( $query->is_feed( WPNA_FACEBOOK_IA_SLUG ) && $query->is_main_query() && wpna_get_option('fbia_article_caching') ) {
+
+			if ( $cached_posts = get_transient( 'wpna_facebook_feed_posts' ) ) {
+				$posts = $cached_posts;
+			} else {
+				set_transient( 'wpna_facebook_feed_posts', $posts, HOUR_IN_SECONDS );
+			}
+
+		}
+
+		return $posts;
+	}
+
+	/**
+	 * Whenever a post is updated flush the feed query cache
+	 *
+	 * @access public
+	 * @param  int  $post_id
+	 * @return null
+	 */
+	public function flush_feed_query_cache() {
+		delete_transient( 'wpna_facebook_feed_posts' );
+	}
+
+	/**
+	 * Alters the WP_Query accordingly for this feed
+	 *
+	 * @access public
+	 * @param  WP_Query $query
+	 * @return WP_Query
+	 */
+	public function feed_query( $query ) {
+		if ( $query->is_feed( WPNA_FACEBOOK_IA_SLUG ) && $query->is_main_query() ) {
+
+			// Try and filter out any empty posts
+			add_filter( 'posts_where', array( $this, 'filter_empty_posts' ), 10, 1 );
+
+			$query->set( 'orderby', 'modified' );
+			$query->set( 'posts_per_page', intval( wpna_get_option('fbia_posts_per_feed', 10 ) ) );
+			$query->set( 'posts_per_rss', intval( wpna_get_option('fbia_posts_per_feed', 10 ) ) );
+
+			if ( wpna_get_option('fbia_modified_only' ) ) {
+				$query->set( 'date_query', array(
+					array(
+						'column' => 'post_modified',
+						'after'  => '1 day ago',
+					),
+				) );
+			}
+
+		}
+
+		return $query;
+	}
+
+	/**
+	 * Facebook doesn't like empty articles so let's try and remove them
+	 * Unhook this filter, we only want it to run once
+	 *
+	 * @access public
+	 * @param  string $where
+	 * @return string
+	 */
+	public function filter_empty_posts( $where = '' ) {
+		remove_filter( current_filter(), array( $this, __FUNCTION__ ) );
+		return $where . " AND trim(coalesce(post_content, '')) <>''";
+	}
+
+	/**
+	 * Locates the correct template for the feed and loads it in
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function feed() {
+		/**
+		 * Use this hook to output headers for the feed
+		 */
+		do_action( 'wp_native_articles_facebook_headers' );
+
+		// Load in the main feed template
+		include wpna_locate_template( 'facebook-instant-articles-feed' );
+	}
+
+	/**
+	 * Set the correct headers for the feed
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function feed_headers() {
+		header( sprintf( "Content-Type: %s; charset=%s", feed_content_type( 'rss2' ), get_option( 'blog_charset' ) ), true );
+		header( "Cache-Control: no-cache, no-store, must-revalidate" ); // HTTP 1.1.
+		header( "Pragma: no-cache" ); // HTTP 1.0.
+		header( "Expires: 0" ); // Proxies.
+	}
+
+}
+

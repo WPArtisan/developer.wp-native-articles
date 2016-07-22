@@ -1,0 +1,1071 @@
+<?php
+
+/**
+ * Setup the Facebook IA admin page.
+ * Register the first tab.
+ *
+ * @author OzTheGreat
+ * @since  0.0.1
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+class WPNA_Facebook_API extends WPNA_Admin_Base implements WPNA_Admin_Interface {
+
+	/**
+	 * The slug of the current page
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $page_slug = 'wp_native_articles';
+
+	/**
+	 * The Facebook class SDK
+	 *
+	 * @access public
+	 * @var object
+	 */
+	public $facebook = null;
+
+	/**
+	 * [__construct description]
+	 *
+	 * == FB FLOW ==
+	 * @todo check FB allowed permissions
+	 * @todo check got access token
+	 *
+	 * @access public
+	 */
+	public function __construct() {
+		$this->hooks();
+	}
+
+	/**
+	 * Register hooks here
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function hooks() {
+		add_action( 'admin_init',               array( $this, 'facebook_logout' ), 10, 0 );
+		add_action( 'admin_init',               array( $this, 'setup_settings' ), 10, 0 );
+		add_action( 'admin_enqueue_scripts',    array( $this, 'scripts' ), 10, 1 );
+		add_action( 'admin_enqueue_scripts',    array( $this, 'styles' ), 10, 1 );
+		add_action( 'wpna_facebook_admin_tabs', array( $this, 'setup_tabs' ), 10, 1 );
+		add_action( 'admin_notices',            array( $this, 'admin_notices' ), 10, 0 );
+		add_action( 'wp_dashboard_setup',       array( $this, 'register_dashboard_widget' ), 10, 0 );
+		add_action( 'wp_ajax_wpna-fbia-dashboard-stats',  array( $this, 'ajax_fbia_dashboard_stats' ), 10, 0 );
+		add_action( 'wp_ajax_wpna-fbia-post-stats',  array( $this, 'ajax_fbia_post_stats' ), 10, 0 );
+		add_action( 'wp_ajax_wpna-fbia-article-import-status',  array( $this, 'ajax_fbia_article_import_status' ), 10, 0 );
+		add_action( 'load-toplevel_page_' . $this->page_slug,  array( $this, 'save_fb_access_token' ), 10, 0 );
+		add_action( 'load-toplevel_page_' . $this->page_slug,  array( $this, 'facebook' ), 1, 0 );
+		add_action( 'admin_footer-post.php', array( $this, 'post_meta_box_import_errors_template' ), 10, 0 );
+		add_action( 'admin_footer-post-new.php', array( $this, 'post_meta_box_import_errors_template' ), 10, 0 );
+
+		// Form sanitization filters
+		add_filter( 'wpna_sanitize_option-fbia_app_id', 'sanitize_text_field', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_app_secret', 'sanitize_text_field', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_page_id', 'absint', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_sync_articles', 'wpna_switchval', 10, 1 );
+		add_filter( 'wpna_sanitize_option-fbia_enviroment', array( $this, 'sanitize_fbia_enviroment' ), 10, 1 );
+
+		add_filter( 'wpna_post_meta_box_content_tabs', array( $this, 'register_post_meta_box_analytics_tab' ), 5, 1 );
+		add_filter( 'wpna_post_meta_box_content_tabs', array( $this, 'register_post_meta_box_status_tab' ), 15, 1 );
+
+		// Check if sync is enabled
+		if ( wpna_switch_to_boolean( wpna_get_option('fbia_sync_articles') ) ) {
+			add_action( 'save_post', array( $this, 'sync_instant_article' ), 999, 3 );
+			add_action( 'trash_post', array( $this, 'delete_instant_article' ), 10, 1 );
+			add_action( 'before_delete_post', array( $this, 'delete_instant_article' ), 10, 1 );
+		}
+	}
+
+	/**
+	 * Enqueue admin scripts here
+	 *
+	 * @access public
+	 * @param  string $hook
+	 * @return null
+	 */
+	public function scripts( $hook ) {
+		wp_register_script( 'chart-js', plugins_url( '/assets/js/Chart.min.js', dirname( __FILE__ ) ), null, '2.1.4', true );
+
+		// JS for dashboard meta box reporting
+		if ( 'index.php' == $hook ) {
+			wp_enqueue_script( 'wpna-dashboard-widget', plugins_url( '/assets/js/dashboard-widget.js', dirname( __FILE__ ) ), array( 'chart-js', 'jquery', 'wp-util' ), WPNA_VERSION, true );
+
+			wp_localize_script( 'wpna-dashboard-widget', 'wpnaDashboardWidget', array(
+				'nonce' => wp_create_nonce( 'wpna_dashboard_widget_ajax_nonce' ),
+				'errorMessage' => esc_html__( 'An error occured. Please ensure the Facebook API is connected', 'wp-native-articles' ),
+			));
+		}
+
+		// JS for post meta box analytics
+		if ( in_array( $hook, array( 'post.php', 'post-new.php') ) ) {
+			wp_enqueue_script( 'wpna-post-analytics',  plugins_url( '/assets/js/post-analytics.js', dirname( __FILE__ ) ), array( 'chart-js', 'jquery', 'jquery-ui-core', 'jquery-ui-datepicker', 'wp-util' ), WPNA_VERSION, true );
+
+			wp_localize_script( 'wpna-post-analytics', 'wpnaPostAnalytics', array(
+				'nonce' => wp_create_nonce( 'wpna_post_ajax_nonce' ),
+				'post_id' => get_the_ID(),
+				'errorMessage' => esc_html__( 'An error occured. Please ensure the Facebook API is connected', 'wp-native-articles' ),
+			));
+		}
+	}
+
+	/**
+	 * Enqueue admin styles here
+	 *
+	 * @access public
+	 * @param  string $hook
+	 * @return null
+	 */
+	public function styles( $hook ) {
+		if ( in_array( $hook, array( 'post.php', 'post-new.php') ) ) {
+			wp_enqueue_style( 'jquery-ui-datepicker', plugins_url( '/assets/css/jquery-ui.min.css', dirname( __FILE__ ) ), '1.11.4' );
+		}
+	}
+
+	/**
+	 * If they logout of Facebook then destroy the session locally
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function facebook_logout() {
+		if ( ! empty( $_GET['fb_action'] ) && 'logout_success' == $_GET['fb_action'] )
+			$this->facebook()->destroySession();
+	}
+
+	/**
+	 * Register the main WP dashboard widget
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function register_dashboard_widget() {
+		wp_add_dashboard_widget(
+			'wpna-facebook-instant-articles',
+			esc_html__( 'Facebook Instant Articles Insights', 'wp-native-articles' ),
+			array( $this, 'dashboard_widget_callback' )
+		);
+	}
+
+	/**
+	 * Output the basic HTML for dashboard widget
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function dashboard_widget_callback() {
+		?>
+		<div class="main">
+			<div class="wpna-loading-spinner" style="width: auto; text-align: center;">
+				<style type='text/css'>@-webkit-keyframes uil-default-anim { 0% { opacity: 1} 100% {opacity: 0} }@keyframes uil-default-anim { 0% { opacity: 1} 100% {opacity: 0} }.uil-default-css > div:nth-of-type(1){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.5s;animation-delay: -0.5s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(2){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.4166666666666667s;animation-delay: -0.4166666666666667s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(3){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.33333333333333337s;animation-delay: -0.33333333333333337s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(4){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.25s;animation-delay: -0.25s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(5){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.16666666666666669s;animation-delay: -0.16666666666666669s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(6){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.08333333333333331s;animation-delay: -0.08333333333333331s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(7){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0s;animation-delay: 0s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(8){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.08333333333333337s;animation-delay: 0.08333333333333337s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(9){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.16666666666666663s;animation-delay: 0.16666666666666663s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(10){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.25s;animation-delay: 0.25s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(11){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.33333333333333337s;animation-delay: 0.33333333333333337s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(12){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.41666666666666663s;animation-delay: 0.41666666666666663s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}</style><div class='uil-default-css' style='transform:scale(0.18);'><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(0deg) translate(0,-60px);transform:rotate(0deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(30deg) translate(0,-60px);transform:rotate(30deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(60deg) translate(0,-60px);transform:rotate(60deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(90deg) translate(0,-60px);transform:rotate(90deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(120deg) translate(0,-60px);transform:rotate(120deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(150deg) translate(0,-60px);transform:rotate(150deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(180deg) translate(0,-60px);transform:rotate(180deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(210deg) translate(0,-60px);transform:rotate(210deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(240deg) translate(0,-60px);transform:rotate(240deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(270deg) translate(0,-60px);transform:rotate(270deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(300deg) translate(0,-60px);transform:rotate(300deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(330deg) translate(0,-60px);transform:rotate(330deg) translate(0,-60px);border-radius:10px;position:absolute;'></div></div>
+			</div>
+
+			<canvas id="wpna-dashboard-fbia-chart"></canvas>
+
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get all the stats for the dashboard widget
+	 * This AJAX method is only available on the admin side
+	 *
+	 * @todo Make FB data transform generic
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function ajax_fbia_dashboard_stats() {
+
+		// Check it's an AJAX request
+		if ( ! defined('DOING_AJAX') || ! DOING_AJAX )
+			wp_die();
+
+		// Check the nonce is valid
+		check_ajax_referer( 'wpna_dashboard_widget_ajax_nonce' );
+
+		if ( ! $this->facebook() )
+			wp_send_json_error();
+
+		// Get stats
+		$page_id = wpna_get_option('fbia_page_id');
+		$week = strtotime("-1 week");
+
+		try {
+			$fb_data = $this->facebook()->api( "/v2.6/{$page_id}?fields=instant_articles_insights.metric(all_views).period(day).since({$week}).until(now).breakdown(platform)" );
+		} catch ( Exception $e ) {
+			wp_send_json_error($e->getMessage());
+		}
+
+		// Check we've got the data expected
+		if ( empty( $fb_data['instant_articles_insights'] ) ||
+			empty( $fb_data['instant_articles_insights']['data'] ) ||
+			! is_array( $fb_data['instant_articles_insights']['data'] )
+		) {
+			wp_send_json_error();
+		}
+
+		$labels = array();
+		$ios_values = array(
+			'label'           => esc_html__( 'iOS', 'wp-native-articles' ),
+			'backgroundColor' => 'rgba(255,99,132,0.2)',
+			'borderColor'     => 'rgba(255,99,132,1)',
+			'borderWidth'     => 1,
+			'data'            => array(),
+		);
+		$android_values = array(
+			'label'           => esc_html__( 'Android', 'wp-native-articles' ),
+			'backgroundColor' => 'rgba(0,115,170,0.2)',
+			'borderColor'     => 'rgba(0,115,170,1)',
+			'borderWidth'     => 1,
+			'data'            => array(),
+		);
+		$other_values = array(
+			'label'           => esc_html__( 'Other', 'wp-native-articles' ),
+			'backgroundColor' => 'rgba(220,220,220,0.2)',
+			'borderColor'     => 'rgba(220,220,220,1)',
+			'borderWidth'     => 1,
+			'data'            => array(),
+		);
+
+		foreach ( $fb_data['instant_articles_insights']['data'] as $row ) {
+
+			$time = date_i18n( "j M y", strtotime( $row['time'] ) );
+
+			if ( ! in_array( $time, $labels ) )
+				$labels[] = $time;
+
+			if ( 'IOS' == $row['breakdowns']['platform'] ) {
+				$ios_values['data'][] = absint( $row['value'] );
+			} elseif ( 'ANDROID' == $row['breakdowns']['platform'] ) {
+				$android_values['data'][] = absint( $row['value'] );
+			} else {
+				$other_values['data'][] = absint( $row['value'] );
+			}
+
+		}
+
+		// Structure the response
+		$stats = array( 'labels' => $labels, 'datasets' => array( $ios_values, $android_values, $other_values ) );
+
+		/**
+		 * Modify the data before returning for the dashboard widget
+		 * @var array  $stats The data to return
+		 * @var array  $fb_data Original FB data
+		 * @var object $this->facebook() The FB api class
+		 */
+		$stats = apply_filters( 'wpna_fbia_dashboard_widget', $stats, $fb_data, $this->facebook() );
+
+		wp_send_json_success( $stats );
+	}
+
+	/**
+	 * Register the facebook analytics tab on the post meta box
+	 *
+	 * @todo Refactor. Tabs class?
+	 *
+	 * @access public
+	 * @param  array $tabs Existing tabs
+	 * @return array
+	 */
+	public function register_post_meta_box_analytics_tab( $tabs ) {
+
+		$tabs[] = array(
+			'key'      => 'fbia_analytics',
+			'title'    => esc_html__( 'Analytics', 'wp-native-articles' ),
+			'callback' => array( $this, 'post_meta_box_analytics_content' ),
+		);
+
+		return $tabs;
+	}
+
+	/**
+	 * Output HTML for the Facebook settings post meta box tab
+	 *
+	 * @todo Check Facebook is connected
+	 * @todo Hooks and filters
+	 * @todo Compare to aggregated results
+	 * @todo Information about each metric
+	 *
+	 * @access public
+	 * @param  WP_Post Global post object
+	 * @return null
+	 */
+	public function post_meta_box_analytics_content( $post ) {
+		?>
+		<h3><?php esc_html_e( 'Instant Article Analytics', 'wp-native-articles' ); ?></h3>
+
+		<div class="wpna-filter-wrapper">
+
+			<label>
+				<?php esc_html_e( 'Since', 'wp-native-articles' ); ?>
+				<input type="text" data-wpna-datepicker="true" data-wpna-redraw-analytics="true" id="wpna-fbia-analytics-since" value="<?php echo esc_attr( date( "Y-m-01" ) ); ?>" />
+			</label>
+
+			<label>
+				<?php esc_html_e( 'Until', 'wp-native-articles' ); ?>
+				<input type="text" data-wpna-datepicker="true" data-wpna-redraw-analytics="true" id="wpna-fbia-analytics-until" value="<?php echo esc_attr( date("Y-m-j") ); ?>" />
+			</label>
+
+			<label>
+				<?php esc_html_e( 'Metric', 'wp-native-articles' ); ?>
+				<select data-wpna-redraw-analytics="true" id="wpna-fbia-analytics-metric">
+					<option value="all_views"><?php esc_html_e( 'All Views', 'wp-native-articles' ); ?></option>
+					<option value="all_view_durations"><?php esc_html_e( 'All View Durations', 'wp-native-articles' ); ?></option>
+					<option value="all_view_durations_average"><?php esc_html_e( 'All View Durations Average', 'wp-native-articles' ); ?></option>
+					<option value="all_scrolls"><?php esc_html_e( 'All Scrolls', 'wp-native-articles' ); ?></option>
+					<option value="all_scrolls_average"><?php esc_html_e( 'All Scrolls Average', 'wp-native-articles' ); ?></option>
+				</select>
+			</label>
+
+			<?php
+			/**
+			 * Output more filter metrics if you like
+			 */
+			do_action( 'wpna_post_meta_box_fbia_analytics_filters' );
+			?>
+
+		</div>
+
+		<?php if ( 'publish' != get_post_status() ) : ?>
+			<i><?php esc_html_e( 'A post has to be published before we can get stats', 'wp-native-articles' );?></i>
+		<?php else : ?>
+
+			<div class="wpna-loading-spinner" style="width: auto; text-align: center;">
+				<style type='text/css'>@-webkit-keyframes uil-default-anim { 0% { opacity: 1} 100% {opacity: 0} }@keyframes uil-default-anim { 0% { opacity: 1} 100% {opacity: 0} }.uil-default-css > div:nth-of-type(1){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.5s;animation-delay: -0.5s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(2){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.4166666666666667s;animation-delay: -0.4166666666666667s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(3){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.33333333333333337s;animation-delay: -0.33333333333333337s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(4){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.25s;animation-delay: -0.25s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(5){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.16666666666666669s;animation-delay: -0.16666666666666669s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(6){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: -0.08333333333333331s;animation-delay: -0.08333333333333331s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(7){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0s;animation-delay: 0s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(8){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.08333333333333337s;animation-delay: 0.08333333333333337s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(9){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.16666666666666663s;animation-delay: 0.16666666666666663s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(10){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.25s;animation-delay: 0.25s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(11){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.33333333333333337s;animation-delay: 0.33333333333333337s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}.uil-default-css > div:nth-of-type(12){-webkit-animation: uil-default-anim 1s linear infinite;animation: uil-default-anim 1s linear infinite;-webkit-animation-delay: 0.41666666666666663s;animation-delay: 0.41666666666666663s;}.uil-default-css { display:inline-block; position: relative;background:none;width:35px;height:35px;}</style><div class='uil-default-css' style='transform:scale(0.18);'><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(0deg) translate(0,-60px);transform:rotate(0deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(30deg) translate(0,-60px);transform:rotate(30deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(60deg) translate(0,-60px);transform:rotate(60deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(90deg) translate(0,-60px);transform:rotate(90deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(120deg) translate(0,-60px);transform:rotate(120deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(150deg) translate(0,-60px);transform:rotate(150deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(180deg) translate(0,-60px);transform:rotate(180deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(210deg) translate(0,-60px);transform:rotate(210deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(240deg) translate(0,-60px);transform:rotate(240deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(270deg) translate(0,-60px);transform:rotate(270deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(300deg) translate(0,-60px);transform:rotate(300deg) translate(0,-60px);border-radius:10px;position:absolute;'></div><div style='top:80px;left:93px;width:14px;height:40px;background:#ff6384;-webkit-transform:rotate(330deg) translate(0,-60px);transform:rotate(330deg) translate(0,-60px);border-radius:10px;position:absolute;'></div></div>
+			</div>
+
+			<canvas id="wpna-fbia-chart"></canvas>
+
+		<?php endif; ?>
+
+		<?php
+	}
+
+	/**
+	 * Get all the stat for the post
+	 * This AJAX method is only available on the admin side
+	 *
+	 * @todo Axis labels
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function ajax_fbia_post_stats() {
+
+		// Check it's an AJAX request
+		if ( ! defined('DOING_AJAX') || ! DOING_AJAX )
+			wp_die();
+
+		// Check the nonce is valid
+		check_ajax_referer( 'wpna_post_ajax_nonce' );
+
+		if ( ! $this->facebook() )
+			wp_send_json_error( esc_html__( 'Facebook API not connected', 'wp-native-articles' ) );
+
+		if ( empty( $_POST['post_id'] ) || ! $post_id = absint( $_POST['post_id'] ) )
+			wp_send_json_error( esc_html__( 'Invalid post ID', 'wp-native-articles' ) );
+
+		/**
+		 * @todo Duplicate of select. Move to class params.
+		 */
+		$metrics = array( 'all_views', 'all_view_durations', 'all_view_durations_average', 'all_scrolls', 'all_scrolls_average' );
+
+		// Setup params for the FB call
+		// https://developers.facebook.com/docs/graph-api/reference/v2.6/instant-article-insights
+		$canonical_url = get_permalink( $post_id );
+		$since = ! empty( $_POST['since'] ) && wpna_valid_date( $_POST['since'] ) ? $_POST['since'] : strtotime('Y-m-01');
+		$until = ! empty( $_POST['until'] ) && wpna_valid_date( $_POST['until'] ) ? $_POST['until'] : strtotime('now');
+		$metric = ! empty( $_POST['metric'] ) && in_array( $_POST['metric'], $metrics ) ? $_POST['metric'] : 'all_views';
+		$period = 'all_views' == $metric ? 'day' : 'week';
+
+		try {
+			$fb_data = $this->facebook()->api( "/v2.6/?fields=instant_article{insights.metric({$metric}).period({$period}).since({$since}).until({$until}).breakdown(platform)}&id={$canonical_url}" );
+		} catch ( Exception $e ) {
+			wp_send_json_error($e->getMessage());
+		}
+
+		$labels = array();
+		$ios_values = array(
+			'label'           => esc_html__( 'iOS', 'wp-native-articles' ),
+			'backgroundColor' => 'rgba(255,99,132,0.2)',
+			'borderColor'     => 'rgba(255,99,132,1)',
+			'borderWidth'     => 1,
+			'data'            => array(),
+		);
+		$android_values = array(
+			'label'           => esc_html__( 'Android', 'wp-native-articles' ),
+			'backgroundColor' => 'rgba(0,115,170,0.2)',
+			'borderColor'     => 'rgba(0,115,170,1)',
+			'borderWidth'     => 1,
+			'data'            => array(),
+		);
+		$other_values = array(
+			'label'           => esc_html__( 'Other', 'wp-native-articles' ),
+			'backgroundColor' => 'rgba(220,220,220,0.2)',
+			'borderColor'     => 'rgba(220,220,220,1)',
+			'borderWidth'     => 1,
+			'data'            => array(),
+		);
+
+		// Get the days between the two dates
+		$datetime1 = new DateTime($since);
+		$datetime2 = new DateTime($until);
+		// Workaround for php 5.2
+		$interval = round( ( $datetime2->format('U') - $datetime1->format('U') ) / DAY_IN_SECONDS );
+
+		// Setup the labels and make sure there are default values
+		// for each point in our time frame
+		for ( $i = 0; $i <= $interval; $i ++ ) {
+			$time_unix = strtotime( "{$since} + {$i} days" );
+			$time_label = date_i18n( "j M y", $time_unix );
+
+			if ( ! in_array( $time_label, $labels ) )
+				$labels[] = $time_label;
+
+			$ios_values['data'][ $time_unix ] = 0;
+			$android_values['data'][ $time_unix ] = 0;
+			$other_values['data'][ $time_unix ] = 0;
+		}
+
+		// Go throught the returned data and add any views in
+		foreach ( $fb_data['instant_article']['insights']['data'] as $row ) {
+
+			$row_time = strtotime( date( "Y-m-d", strtotime( $row['time'] ) ) );
+
+			if ( 'IOS' == $row['breakdowns']['platform'] ) {
+				$ios_values['data'][ $row_time ] = absint( $row['value'] );
+			} elseif ( 'ANDROID' == $row['breakdowns']['platform'] ) {
+				$android_values['data'][ $row_time ] = absint( $row['value'] );
+			} else {
+				$other_values['data'][ $row_time ] = absint( $row['value'] );
+			}
+
+		}
+
+		// We only want the values here.
+		// Chartjs requires an array, doesn't work with an object
+		$ios_values['data'] = array_values( $ios_values['data'] );
+		$android_values['data'] = array_values( $android_values['data'] );
+		$other_values['data'] = array_values( $other_values['data'] );
+
+		// Structure the response
+		$stats = array( 'labels' => $labels, 'datasets' => array( $ios_values, $android_values, $other_values ) );
+
+		/**
+		 * Modify the data before returning for the dashboard widget
+		 * @var array  $stats The data to return
+		 * @var array  $fb_data Original FB data
+		 * @var object $this->facebook() The FB api class
+		 */
+		$stats = apply_filters( 'wpna_fbia_dashboard_widget', $stats, $fb_data, $this->facebook() );
+
+		wp_send_json_success( $stats );
+	}
+
+	/**
+	 * Register the facebook analytics tab on the post meta box
+	 *
+	 * @todo Refactor. Tabs class?
+	 *
+	 * @access public
+	 * @param  array $tabs Existing tabs
+	 * @return array
+	 */
+	public function register_post_meta_box_status_tab( $tabs ) {
+
+		$tabs[] = array(
+			'key'      => 'fbia_status',
+			'title'    => esc_html__( 'Status', 'wp-native-articles' ),
+			'callback' => array( $this, 'post_meta_box_status_content' ),
+		);
+
+		return $tabs;
+	}
+
+
+		/**
+		 * Output HTML for the Facebook status post meta box tab
+		 *
+		 * @access public
+		 * @param  WP_Post Global post object
+		 * @return null
+		 */
+		public function post_meta_box_status_content( $post ) {
+			?>
+			<h3><?php esc_html_e( 'Instant Article Status', 'wp-native-articles' ); ?></h3>
+			<?php
+		}
+
+	/**
+	 * Output the HTML for the import errors template
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function post_meta_box_import_errors_template() {
+		?>
+		<script type="text/html" id="tmpl-wpna-fbia-import-status">
+			<h4><?php esc_html_e( 'Status:', 'wp-native-articles' ); ?> <span class="wpna-error">{{{data.status}}}</span></h4>
+			<table class="pure-table pure-table-horizontal">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Level', 'wp-native-articles' ); ?></th>
+						<th><?php esc_html_e( 'Message', 'wp-native-articles' ); ?></th>
+					</tr>
+				</thead>
+
+				<tbody>
+					<# _.each(data.errors, function(error) { #>
+					<tr>
+						<td>{{ error.level }}</td>
+						<td>{{ error.message }}</td>
+					</tr>
+					<# }) #>
+				</tbody>
+			</table>
+		</script>
+		<?php
+	}
+
+	/**
+	 * Retrives the status of an article in Facebook instant article
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function ajax_fbia_article_import_status() {
+		// Check it's an AJAX request
+		if ( ! defined('DOING_AJAX') || ! DOING_AJAX )
+			wp_die();
+
+		// Check the nonce is valid
+		check_ajax_referer( 'wpna_post_ajax_nonce' );
+
+		if ( ! $this->facebook() )
+			wp_send_json_error( esc_html__( 'Facebook API not connected', 'wp-native-articles' ) );
+
+		if ( empty( $_POST['post_id'] ) || ! $post_id = absint( $_POST['post_id'] ) )
+			wp_send_json_error( esc_html__( 'Invalid post ID', 'wp-native-articles' ) );
+
+		$import_status = $this->fbia_get_article_import_status( $post_id );
+
+		if ( is_wp_error( $import_status ) ) {
+			wp_send_json_error( $import_status->get_error_message() );
+		}
+
+		wp_send_json_success( $import_status );
+	}
+
+	/**
+	 * Sync the post with Facebook:
+	 * - if it's enabled in the settings
+	 * - if it's not an auto revision
+	 *
+	 *
+	 *
+	 * @param int $post_id The post ID.
+	 * @param post $post The post object.
+	 * @param bool $update Whether this is an existing post being updated or not.
+	 */
+	public function sync_instant_article( $post_id, $wp_post, $update ) {
+
+		// If this is just a revision, abort
+		if ( wp_is_post_revision( $post_id ) )
+			return;
+
+		// If this is just an auto save, abort
+		if ( wp_is_post_autosave( $post_id ) )
+			return;
+
+		// If the API isn't connected do nothing
+		if ( ! $this->facebook() )
+			return;
+
+		$page_id = wpna_get_option('fbia_page_id');
+
+		$post = new WPNA_Facebook_Post( $post_id );
+
+		ob_start();
+		include wpna_locate_template( 'facebook-instant-articles-item-content' );
+		$html_source = ob_get_clean();
+		$development_mode = 'production' == wpna_get_option('enviroment') ? true : false;
+		$published = 'publish' == $wp_post->post_status && ! $development_mode ? true : false;
+
+		try {
+			$fb_data = $this->facebook()->api( "/{$page_id}/instant_articles",
+				'POST',
+				array(
+					'html_source'      => $html_source,
+					'development_mode' => $development_mode,
+					'published'        => $published,
+				)
+			);
+		} catch ( Exception $e ) {
+			wp_send_json_error($e->getMessage());
+		}
+
+		update_post_meta( $post_id, '_wpna_fbia_import_id', $fb_data['instant_article']['import_id'] );
+	}
+
+	/**
+	 * When a post is trashed or deleted make sure it's remove in instant articles
+	 *
+	 * @access public
+	 * @param  int  $post_id
+	 * @return null
+	 */
+	public function delete_instant_article( $post_id ) {
+
+		// If the API isn't connected do nothing
+		if ( ! $this->facebook() )
+			return;
+
+		$article_id = $this->fbia_get_article_id( $post_id );
+
+		try {
+			$fb_data = $this->facebook()->api( "/{$article_id}", 'DELETE' );
+		} catch ( Exception $e ) {
+			// Handle error
+		}
+
+		if ( ! empty( $fb_data['success'] ) && true == $fb_data['success'] ) {
+			delete_post_meta( $post_id, '_wpna_fbia_id' );
+			delete_post_meta( $post_id, '_wpna_fbia_import_id' );
+		}
+	}
+
+	/**
+	 * Retrives the FBIA article ID
+	 *
+	 * @access public
+	 * @param  int The WordPress post ID to get the details for
+	 * @return int|WP_Error
+	 */
+	public function fbia_get_article_id( $post_id ) {
+		if ( $fbia_id = get_post_meta( $post_id, '_wpna_fbia_id', true ) )
+			return $fbia_id;
+
+		$canonical_url = get_permalink( $post_id );
+$canonical_url = "http://thetab.com/uk/bath/2016/05/23/bath-tenth-best-university-uk-4265";
+// $canonical_url = "http://thetab.dev/uk/bath/2016/03/29/four-bath-students-flying-dubai-business-competition-final-4085";
+
+		$development_mode = 'production' == wpna_get_option('enviroment') ? 'instant_article' : 'development_instant_article';
+
+		try {
+			$fb_data = $this->facebook()->api( "?id={$canonical_url}&fields={$development_mode}" );
+		} catch ( Exception $e ) {
+			return new WP_Error( 'wpna', $e->getMessage() );
+		}
+
+		if ( empty( $fb_data['instant_article'] ) || empty( $fb_data['instant_article']['id'] ) )
+			return new WP_Error( 'wpna', esc_html__( 'Could not find post', 'wp-native-articles' ) );
+
+		update_post_meta( $post_id, '_wpna_fbia_id', $fb_data['instant_article']['id'] );
+
+		return $fb_data['instant_article']['id'];
+	}
+
+	/**
+	 * Retrives the FBIA article ID
+	 *
+	 * @access public
+	 * @param  int The WordPress post ID to get the details for
+	 * @return int|WP_Error
+	 */
+	public function fbia_get_article_import_status( $post_id ) {
+		if ( ! $fbia_import_id = get_post_meta( $post_id, '_wpna_fbia_import_id', true ) )
+			return new WP_Error( 'wpna', esc_html__( 'This article does not have an import ID', 'wp-native-articles' ) );
+
+		try {
+			$fb_data = $this->facebook()->api( "{$fbia_import_id}?fields=errors,html_source,instant_article,status");
+		} catch ( Exception $e ) {
+			return new WP_Error( 'wpna', $e->getMessage() );
+		}
+
+		return $fb_data;
+	}
+
+	/**
+	 * Display admin notices at correct times
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function admin_notices() {
+		?>
+		<?php if ( ! empty( $_GET['fb_action'] ) ) :?>
+
+			<?php if ( 'login_success' == $_GET['fb_action'] ) : ?>
+				<div class="notice notice-success">
+					<p><?php esc_html_e( 'Facebook successully authorized', 'wp-native-articles' ); ?></p>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( 'logout_success' == $_GET['fb_action'] ) : ?>
+				<div class="notice notice-success">
+					<p><?php esc_html_e( 'Facebook successully deauthorized', 'wp-native-articles' ); ?></p>
+				</div>
+			<?php endif; ?>
+
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 * Use the Tabs helper to setup tabs on this page
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_tabs( $tabs ) {
+		$tabs->register_tab(
+			'api',
+			__( 'API', 'wp-native-articles' ),
+			$this->page_url(),
+			array( $this, 'api_tab_callback' )
+		);
+	}
+
+	/**
+	 * Register sections and settings fields
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function setup_settings() {
+		register_setting( 'wpna_facebook-api', 'wpna_options', 'wpna_sanitize_options' );
+
+		add_settings_section(
+			'wpna_facebook-api_section_1',
+			__( 'Facebook Auth', 'wp-native-articles' ),
+			[ $this, 'section_1_callback' ],
+			'wpna_facebook-api' // This needs to be unique to this tab + Match the one called in do_settings_sections
+		);
+
+		add_settings_field(
+			'fbia_app_id',
+			'<label for="fbia_app_id">' . esc_html__( 'App ID', 'wp-native-articles' ) . '</label>',
+			[ $this, 'app_id_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+		add_settings_field(
+			'fbia_app_secret',
+			'<label for="fbia_app_secret">' . esc_html__( 'App Secret', 'wp-native-articles' ) . '</label>',
+			[ $this, 'app_secret_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+		add_settings_field(
+			'fbia_fb_user',
+			__( 'Facebook User', 'wp-native-articles' ),
+			[ $this, 'fb_user_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+		add_settings_field(
+			'fbia_page_id',
+			'<label for="fbia_page_id">' . esc_html__( 'Page ID', 'wp-native-articles' ) . '</label>',
+			[ $this, 'page_id_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+		// DOESN'T SAVE ANYTHING
+		// Just using the hook
+		add_settings_field(
+			'fbia_status',
+			__( 'Facebook Status', 'wp-native-articles' ),
+			[ $this, 'status_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+		add_settings_field(
+			'fbia_sync_articles',
+			'<label for="fbia_sync_articles">' . esc_html__( 'Sync Articles', 'wp-native-articles' ) . '</label>',
+			[ $this, 'sync_articles_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+		add_settings_field(
+			'fbia_enviroment',
+			'<label for="fbia_enviroment">' . esc_html__( 'Enviroment', 'wp-native-articles' ) . '</label>',
+			[ $this, 'enviroment_callback' ],
+			'wpna_facebook-api',
+			'wpna_facebook-api_section_1'
+		);
+
+	}
+
+	/**
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function api_tab_callback() {
+		?>
+		<form action="options.php" method="post">
+			<?php settings_fields( 'wpna_facebook-api' ); ?>
+			<?php do_settings_sections( 'wpna_facebook-api' ); ?>
+			<?php submit_button(); ?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Content outputted at the begining of a section
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function section_1_callback() {
+		?>
+		<p>
+			<?php esc_html_e( 'These settings apply to the Facebook API.', 'wp-native-articles' ); ?>
+			<br />
+			<?php esc_html_e( 'Unlike the RSS feed the API can be in real time, articles will be updated on Facebook then same time they are updated on WordPress.', 'wp-native-articles' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * The ID of your Facebook app
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function app_id_callback() {
+		?>
+		<input type="text" name="wpna_options[fbia_app_id]" id="fbia_app_id" class="regular-text" value="<?php echo sanitize_text_field( wpna_get_option('fbia_app_id') ); ?>">
+		<p class="description"><?php esc_html_e( 'Your Facebook App ID', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * The secret of your Facebook app
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function app_secret_callback() {
+		?>
+		<input type="text" autocomplete="off" name="wpna_options[fbia_app_secret]" id="fbia_app_secret" class="regular-text" value="<?php echo sanitize_text_field( wpna_get_option('fbia_app_secret') ); ?>">
+		<p class="description"><?php esc_html_e( 'Your Facebook App Secret', 'wp-native-articles' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * The secret of your Facebook app
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function fb_user_callback() {
+		?>
+		<?php if ( ! wpna_get_option('fbia_app_id') || ! wpna_get_option('fbia_app_secret') ) : ?>
+			<p><b><i><?php esc_html_e( 'You must enter an App ID and App Secret before you can authorise your Facebook account.', 'wp-native-articles' ); ?></i></b></p>
+		<?php else : ?>
+
+			<?php if ( $user_id = $this->facebook()->getUser() ) : ?>
+
+				<?php
+					$logout_params = array(
+						'access_token' => $this->facebook()->getAccessToken(),
+						'next'         => $this->page_url( array( 'tab' => 'api', 'fb_action' => 'logout_success' ) ),
+					);
+				?>
+
+				<img src="https://graph.facebook.com/<?php echo $user_id; ?>/picture">
+				<a href="<?php echo esc_url( $this->facebook()->getLogoutUrl( $logout_params ) ); ?>" class="button button-secondary">
+					<?php esc_html_e( 'Logout', 'wp-native-articles' ); ?>
+				</a>
+
+			  <?php else : ?>
+
+				<?php
+					$login_params = array(
+						'redirect_uri' => $this->page_url( array( 'tab' => 'api', 'fb_action' => 'login_success' ) ),
+						'scope'        => 'pages_manage_instant_articles,pages_show_list,read_insights',
+					);
+				?>
+
+				<a href="<?php echo $this->facebook()->getLoginUrl( $login_params );?>" class="button button-primary">
+					<?php esc_html_e( 'Login', 'wp-native-articles' ); ?>
+				</a>
+
+			<?php endif; ?>
+
+		<?php endif; ?>
+		<?php
+	}
+
+	/**
+	 *
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function page_id_callback() {
+		// If not auth'd
+		// If no permissions
+		?>
+		<?php if ( $this->facebook() && $user_id = $this->facebook()->getUser() ) : ?>
+
+			<?php
+			// Don't bother with pagination. Pass an unlikley big number
+			$pages_managed = $this->facebook()->api( "/{$user_id}/accounts?limit=9999999&summary=total_count" );
+			// Order alphabetically
+			// Not wild about the create_function() but can't use lamda ones
+			usort( $pages_managed['data'], create_function( '$a,$b', 'return strcmp( $a[\'name\'], $b[\'name\'] );' ) );
+			?>
+
+			<select name="wpna_options[fbia_page_id]" id="fbia_page_id">
+				<option></option>
+				<?php foreach ( $pages_managed['data'] as $page ) : ?>
+				<option value="<?php echo sanitize_text_field( $page['id'] ); ?>" <?php selected( wpna_get_option('fbia_page_id'), $page['id'] ); ?>><?php echo $page['name']; ?></option>
+				<?php endforeach; ?>
+			</select>
+
+			<p class="description"><?php printf( esc_html__( '%s pages found', 'wp-native-articles' ), $pages_managed['summary']['total_count'] ); ?></p>
+
+		<?php else : ?>
+			<p><b><i><?php esc_html_e( 'You need to login above and authorise the App', 'wp-native-articles' ); ?></i></b></p>
+		<?php endif ;?>
+
+		<?php
+	}
+
+	/**
+	 * Doesn't actually save anything, just outputs the connection status
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function status_callback() {
+		$page_id = wpna_get_option('fbia_page_id');
+		$articles = null;
+
+		try {
+			if ( $this->facebook() )
+				$articles = $this->facebook()->api( "/{$page_id}/instant_articles?limit=0&summary=total_count" );
+		} catch ( Exception $e ) {
+			// an error occurred
+			// echo $e->getMessage();
+		}
+		// Get instant articles count for page
+		$count = isset( $articles['summary'] ) && isset( $articles['summary']['total_count'] ) ? $articles['summary']['total_count'] : 0 ;
+
+		?>
+
+		<?php if ( $articles ) : ?>
+			<span style="text-transform:uppercase;color:green;font-weight:bold;"><?php esc_html_e( 'Connected', 'wp-native-articles' ); ?></span>
+			<p class="description"><?php printf( esc_html__( '%s instant articles found on this page', 'wp-native-articles' ), absint( $count ) ); ?>
+		<?php else : ?>
+			<span style="text-transform:uppercase;color:red;font-weight:bold;"><?php esc_html_e( 'Disconnected', 'wp-native-articles' ); ?></span>
+		<?php endif; ?>
+
+		<?php
+	}
+
+	/**
+	 * Callback for the sync articles checkbox
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function sync_articles_callback() {
+		?>
+		<label for="fbia_sync_articles">
+			<select name="wpna_options[fbia_sync_articles]" id="fbia-sync-articles">
+				<option value="off"<?php selected( wpna_get_option('fbia_sync_articles'), 'off' ); ?>><?php esc_html_e( 'Disabled', 'wp-native-articles' ); ?></option>
+				<option value="on"<?php selected( wpna_get_option('fbia_sync_articles'), 'on' ); ?>><?php esc_html_e( 'Enabled', 'wp-native-articles' ); ?></option>
+			</select>
+			<?php esc_html_e( 'Auto publish, update & delete instant articles in sync with WordPress posts', 'wp-native-articles' ); ?>
+		</label>
+		<?php
+	}
+
+	/**
+	 * Callback for the enviroment select
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function enviroment_callback() {
+		?>
+		<label for="fbia_enviroment">
+			<select name="wpna_options[fbia_enviroment]" id="fbia_enviroment">
+				<option value="production"<?php selected( wpna_get_option('fbia_enviroment'), 'production' ); ?>><?php esc_html_e( 'Production', 'wp-native-articles' ); ?></option>
+				<option value="development"<?php selected( wpna_get_option('fbia_enviroment'), 'development' ); ?>><?php esc_html_e( 'Development', 'wp-native-articles' ); ?></option>
+			</select>
+		</label>
+		<?php
+	}
+
+	/**
+	 * After a user has authorised an account save the access token
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function save_fb_access_token() {
+		if ( ! empty( $_GET['fb_action'] ) && 'login_success' == $_GET['fb_action'] ) {
+			$this->facebook()->setExtendedAccessToken();
+			if ( $access_token = $this->facebook()->getAccessToken() ) {
+				set_transient( 'wpna_fb_access_token', $access_token, 60 * DAY_IN_SECONDS );
+			}
+		}
+	}
+
+	/**
+	 * Access the Facebook object
+	 *
+	 * @todo Move to class
+	 *
+	 * @access public
+	 * @return Facebook|null
+	 */
+	public function facebook() {
+		if ( $this->facebook )
+			return $this->facebook;
+
+		if ( wpna_get_option('fbia_app_id') && wpna_get_option('fbia_app_secret') ) {
+
+			$this->facebook = new Facebook(array(
+				'appId'  => wpna_get_option('fbia_app_id'),
+				'secret' => wpna_get_option('fbia_app_secret'),
+			));
+
+			if ( $access_token = get_transient( 'wpna_fb_access_token' ) ) {
+				$this->facebook->setAccessToken( $access_token );
+			}
+		}
+
+		return $this->facebook;
+	}
+
+	/**
+	 * Sanitizes the enviroment variable.
+	 * Ensures it matches either 'produciton' or 'development'
+	 *
+	 * @access public
+	 * @param  string $input
+	 * @return string
+	 */
+	public function sanitize_fbia_enviroment( $input ) {
+		return 'production' == $input ? 'production' : 'development';
+	}
+
+}
+

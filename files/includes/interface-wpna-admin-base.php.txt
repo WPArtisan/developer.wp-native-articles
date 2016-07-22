@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Base admin page class.
+ *
+ * A base admin page class that all other
+ * admin pages should extend
+ *
+ * @author OzTheGreat
+ * @since  0.0.5
+ */
+
+ // Exit if accessed directly
+ if ( ! defined( 'ABSPATH' ) ) exit;
+
+interface WPNA_Admin_Interface {
+
+	/**
+	 * Register hooks here
+	 *
+	 * @access public
+	 * @return null
+	 */
+	public function hooks();
+
+	/**
+	 * Returns the full url to the current page
+	 *
+	 * @access public
+	 * @return string
+	 */
+	public function page_url();
+
+}
+
